@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" shape-rendering="crispEdges">
+  <title>Standard Biim frame</title>
+  <path fill="#1e1e1e" fill-rule="evenodd" d="M0 0H1920V1080H0Z M16 16H1456V826H16Z" />
+  <g fill="#cccccc">
+    <path fill-rule="evenodd" d="M8 8H1464V834H8Z M16 16H1456V826H16Z" />
+    <rect x="1476" y="8" width="436" height="226" />
+    <rect x="1476" y="246" width="436" height="588" />
+    <rect x="300" y="846" width="1612" height="226" />
+  </g>
+  <g fill="#1e1e1e">
+    <rect x="1484" y="16" width="420" height="210" />
+    <rect x="1484" y="254" width="420" height="573" />
+    <rect x="308" y="854" width="1596" height="210" />
+  </g>
+</svg>

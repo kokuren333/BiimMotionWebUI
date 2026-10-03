@@ -1,0 +1,23 @@
+{
+  "name": "motion-job-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "node scripts/run.mjs studio",
+    "preview": "node scripts/run.mjs preview",
+    "still": "node scripts/run.mjs still",
+    "build": "node scripts/run.mjs build",
+    "validate": "node scripts/validate.mjs",
+    "voice": "node scripts/aivis.mjs",
+    "sound": "node scripts/sound-design.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "remotion": "4.0.532", "@remotion/cli": "4.0.532", "@remotion/three": "4.0.532",
+    "@react-three/fiber": "9.8.1", "three": "0.186.1",
+    "react": "19.2.4", "react-dom": "19.2.4"
+  },
+  "devDependencies": { "typescript": "5.9.3", "@types/react": "19.2.14", "@types/react-dom": "19.2.3", "@types/three": "0.186.0" },
+  "engines": { "node": ">=22" }
+}

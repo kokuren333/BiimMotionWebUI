@@ -1,0 +1,15 @@
+{
+  "name": "motion-job",
+  "private": true,
+  "type": "module",
+  "workspaces": ["runtime"],
+  "scripts": {
+    "studio": "npm --workspace runtime run studio",
+    "preview": "npm --workspace runtime run preview",
+    "build": "npm --workspace runtime run build",
+    "validate": "npm --workspace runtime run validate",
+    "voice": "npm --workspace runtime run voice",
+    "sound": "npm --workspace runtime run sound"
+  },
+  "engines": {"node": ">=22"}
+}

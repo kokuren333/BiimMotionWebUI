@@ -1,0 +1,44 @@
+{
+  "preset": "biim-standard-v1",
+  "base_width": 1920,
+  "base_height": 1080,
+  "frame": "assets/biim-frame.svg",
+  "colors": {
+    "background": "#1e1e1e",
+    "border": "#cccccc",
+    "note": "#f4f4f4",
+    "subtitle": "#ff0000"
+  },
+  "regions": {
+    "main": [16, 16, 1440, 810],
+    "note_top": [1498, 34, 388, 182],
+    "note_bottom": [1498, 274, 388, 532],
+    "character": [0, 740, 330, 332],
+    "subtitle": [350, 870, 1528, 178]
+  },
+  "fonts": {
+    "body": {
+      "family": "Noto Sans JP",
+      "path": "assets/fonts/NotoSansJP-Variable.ttf",
+      "weight": 600
+    },
+    "note_top": {
+      "family": "Noto Sans JP",
+      "path": "assets/fonts/NotoSansJP-Variable.ttf",
+      "weight": 800,
+      "size": 44
+    },
+    "note_bottom": {
+      "family": "Noto Sans JP",
+      "path": "assets/fonts/NotoSansJP-Variable.ttf",
+      "weight": 600,
+      "size": 34
+    },
+    "subtitle": {
+      "family": "M PLUS Rounded 1c",
+      "path": "assets/fonts/MPLUSRounded1c-ExtraBold.ttf",
+      "weight": 800,
+      "size": 64
+    }
+  }
+}
