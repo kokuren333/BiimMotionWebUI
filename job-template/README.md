@@ -31,11 +31,13 @@ project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕�
 
 `runtime/src/BiimScene.tsx`にsceneを渡すとnote_top / note_bottomを配置します。そのchildrenが中央の自由なRemotion映像、characterが字幕を避けたキャラ領域です。plan/narration.jsonのsegmentsを空にして`npm run voice`を実行すると、scenes[].scriptから句点ごとの読み上げと字幕を生成します。音声出力のscene_idと実測秒を使って各Sequenceを同期してください。個別の開始時刻が必要ならnarration.jsonで上書きします。
 
-同梱の`biim-standard-v1`（project.layout）、枠SVG、Noto Sans JP（本文・ノート）、M PLUS Rounded 1c ExtraBold（字幕）が標準です。枠は背景#1e1e1e・枠線#cccccc、ノートは白系、字幕は1人目が赤、2人目が青＋白9pxの縁取りを既定とし、話者ごとの指定色を使用します。Fontsコンポーネントが明示的にファイルを読み込み、完了までレンダリングを待ちます。フォント欠損はエラーにします。標準コンポーネントを使う限り同じ枠・書体を使えます。フォントの権利表示とOFL全文はassets/fonts/にあります。独自の演出を作る場合もBiim場面の枠・書体を揃えてください。
+同梱の`biim-standard-v1`（project.layout）、枠SVG、Noto Sans JP（本文・ノート）、M PLUS Rounded 1c ExtraBold（字幕）が標準です。枠は背景#1e1e1e・枠線#cccccc、ノートは白系、字幕は1人目が青、2人目が赤＋白9pxの縁取りを既定とし、話者ごとの指定色を使用します。Fontsコンポーネントが明示的にファイルを読み込み、完了までレンダリングを待ちます。フォント欠損はエラーにします。標準コンポーネントを使う限り同じ枠・書体を使えます。フォントの権利表示とOFL全文はassets/fonts/にあります。独自の演出を作る場合もBiim場面の枠・書体を揃えてください。
 
 ## キャラクター・全画面・縦動画
 
 `project.characters`に1人または2人の設定を保存します。`character_mode`は`solo` / `duo`。各人の`id / name / reading / personality / speaking_style / role / notes / position / model / subtitle_color / subtitle_outline / voice`を制作に反映してください。`project.character`は1人目の互換コピーです。新規シーンは`characters`を参照し、変更もこちらへ反映します。
+
+Aivisの既定は1人目が`kokuren_3rd`のノーマル（Style ID `1069147200`）、2人目が`natto-z`のノーマル（Style ID `1566366592`）、話速はいずれも1.0です。エンジンURLは`http://127.0.0.1:10101`。1人モードでも1人目の声と青字幕を使います。各設定は変更できます。モデル名は確認用の表示で、合成にはStyle IDを使用します。
 
 掛け合いは次のように記入します。`plan/narration.json`のsegmentsでも`speaker_id`を必ず指定します。
 
@@ -46,7 +48,7 @@ project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕�
 ]}
 ```
 
-segmentsが空なら`npm run voice`はdialogueを優先し、1人解説では従来通りscriptを句点などで分割します。話者のStyle ID・話速を適用し、出力の各clipにspeaker_idを保存して字幕色へ反映します。同じStyle IDは同じ声です。字幕は1人目が赤・2人目が青＋白ふちを既定とし、指定色を使います。textは字幕の表記を保持し、名前のreadingは音声だけに適用します。`spoken_text`は読み上げ原稿だけを上書きします。開始時刻は従来通りstart_secで調整できます。
+segmentsが空なら`npm run voice`はdialogueを優先し、1人解説では従来通りscriptを句点などで分割します。話者のStyle ID・話速を適用し、出力の各clipにspeaker_idを保存して字幕色へ反映します。同じStyle IDは同じ声です。字幕は1人目が青・2人目が赤＋白ふちを既定とし、指定色を使います。textは字幕の表記を保持し、名前のreadingは音声だけに適用します。`spoken_text`は読み上げ原稿だけを上書きします。開始時刻は従来通りstart_secで調整できます。
 
 `BiimScene`の`character`と`secondCharacter`へ各モデルの`Character3D`を渡します。Biimの既定配置はキャラ1が左・字幕枠が中央・キャラ2が右。positionに応じてキャラ領域・字幕領域・同梱SVGの字幕枠を調整済みです。Character3Dは枠内を大きく使い、キャンバスの上端を20%せり出させます。モデルや動作に応じて`sizeMultiplier`（既定1.2）を調整できます。口パクは実モデルのリグに合わせて実装してください。
 

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  aivisStyleLabel,
   createProject,
   characterProfiles,
   defaults,
@@ -808,8 +809,8 @@ export default function App() {
                                 /^#[0-9a-f]{6}$/i.test(profile.subtitleColor)
                                   ? profile.subtitleColor
                                   : index === 0
-                                    ? "#ff0000"
-                                    : "#0000ff"
+                                    ? defaults.subtitleColor
+                                    : defaults.secondCharacter.subtitleColor
                               }
                               onChange={(e) =>
                                 characterField(
@@ -893,6 +894,9 @@ export default function App() {
                                       )
                                     }
                                   />
+                                  <small>
+                                    {aivisStyleLabel(profile.styleId)}
+                                  </small>
                                 </label>
                                 <label>
                                   話速
@@ -972,6 +976,7 @@ export default function App() {
                                 field("styleId", Number(e.target.value))
                               }
                             />
+                            <small>{aivisStyleLabel(form.styleId)}</small>
                           </label>
                           <label>
                             話速

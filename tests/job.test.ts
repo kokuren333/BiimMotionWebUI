@@ -272,6 +272,19 @@ test("procedural BGM and SE are deterministic, finite WAVs with bounded peaks", 
 });
 
 test("solo and duo profiles preserve names, roles, custom colors and independent voices", () => {
+  const defaultDuo = createProject({ ...form, characterMode: "duo" }, empty);
+  assert.deepEqual(
+    defaultDuo.characters.map((character) => [
+      character.voice.style_id,
+      character.voice.speed,
+      character.subtitle_color,
+      character.subtitle_outline,
+    ]),
+    [
+      [1069147200, 1, "#0000ff", "#ffffff"],
+      [1566366592, 1, "#ff0000", "#ffffff"],
+    ],
+  );
   const solo = createProject({ ...form, subtitleColor: "#12ab34" }, empty);
   assert.equal(solo.characters.length, 1);
   assert.equal(solo.characters[0].subtitle_color, "#12ab34");
@@ -294,8 +307,8 @@ test("solo and duo profiles preserve names, roles, custom colors and independent
   assert.deepEqual(
     duo.characters.map((c) => [c.id, c.name, c.reading, c.subtitle_color]),
     [
-      ["character1", "茜", "あかね", "#ff0000"],
-      ["character2", "葵", "あおい", "#0000ff"],
+      ["character1", "茜", "あかね", "#0000ff"],
+      ["character2", "葵", "あおい", "#ff0000"],
     ],
   );
   assert.equal(duo.characters[1].voice.style_id, 42);

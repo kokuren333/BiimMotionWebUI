@@ -54,6 +54,15 @@ export interface MotionForm {
   evidencePolicy: "primary" | "supplied-only" | "balanced";
 }
 
+export const aivisPresets = {
+  kokurenThird: { styleId: 1069147200, label: "kokuren_3rd（ノーマル）" },
+  nattoZ: { styleId: 1566366592, label: "natto-z（ノーマル）" },
+};
+
+export const aivisStyleLabel = (styleId: number) =>
+  Object.values(aivisPresets).find((preset) => preset.styleId === styleId)
+    ?.label ?? "カスタムStyle ID";
+
 export const defaults: MotionForm = {
   title: "",
   description: "",
@@ -72,7 +81,7 @@ export const defaults: MotionForm = {
   characterSpeakingStyle: "わかりやすいです・ます調。",
   characterRole: "解説役",
   characterPosition: "left",
-  subtitleColor: "#ff0000",
+  subtitleColor: "#0000ff",
   secondCharacter: {
     name: "",
     reading: "",
@@ -81,15 +90,15 @@ export const defaults: MotionForm = {
     role: "聞き手・質問役",
     position: "right",
     notes: "相手の説明に合わせて視線やリアクションをつける。",
-    subtitleColor: "#0000ff",
-    styleId: 1069147200,
+    subtitleColor: "#ff0000",
+    styleId: aivisPresets.nattoZ.styleId,
     voiceSpeed: 1,
     voiceNotes: "質問と相づちに自然な抑揚をつける。",
   },
   fullScreen: false,
   voiceEngine: "aivis",
   engineUrl: "http://127.0.0.1:10101",
-  styleId: 1069147200,
+  styleId: aivisPresets.kokurenThird.styleId,
   voiceSpeed: 1,
   voiceNotes:
     "自然な日本語。専門用語の読みと、図解を理解するための間を調整する。",
@@ -474,7 +483,7 @@ export function createBrief(form: MotionForm, assets: JobAssets): string {
         `表情・動き: ${character.notes}`,
         `モデル: ${character.model ?? "未添付。必要な素材や代替案を記録する。"}`,
         `字幕: ${character.subtitle_color} + 白ふち (${character.subtitle_outline})`,
-        `音声: Style ID ${character.voice.style_id} / 話速 ${character.voice.speed} / ${character.voice.notes}`,
+        `音声: ${aivisStyleLabel(character.voice.style_id)} / Style ID ${character.voice.style_id} / 話速 ${character.voice.speed} / ${character.voice.notes}`,
       ].join("\n"),
     ),
   ].join("\n\n");
