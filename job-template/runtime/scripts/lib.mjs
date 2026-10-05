@@ -42,12 +42,69 @@ export function finite(value, min, max, label) {
     throw new Error(`${label}: expected ${min}–${max}`);
   return value;
 }
+// Legacy solo jobs keep their original model and global voice settings.
+export function projectCharacters(project) {
+  return (
+    project.characters ?? [
+      {
+        ...project.character,
+        id: "character1",
+        voice: project.voice,
+        subtitle_color: project.layout?.colors?.subtitle ?? "#ff0000",
+        subtitle_outline: "#ffffff",
+      },
+    ]
+  );
+}
+
+export function narrationSpeaker(project, segment) {
+  const characters = projectCharacters(project);
+  if (characters.length > 1 && !segment.speaker_id)
+    throw new Error("Duo narration requires speaker_id: " + segment.id);
+  const speaker = segment.speaker_id
+    ? characters.find((character) => character.id === segment.speaker_id)
+    : characters[0];
+  if (!speaker) throw new Error("Unknown speaker_id: " + segment.speaker_id);
+  return speaker;
+}
+
+export function validateCharacters(project) {
+  const characters = projectCharacters(project);
+  if (
+    project.characters &&
+    (characters.length !== (project.character_mode === "duo" ? 2 : 1) ||
+      !["solo", "duo"].includes(project.character_mode))
+  )
+    throw new Error("Invalid character_mode / characters count");
+  const ids = new Set();
+  for (const character of characters) {
+    validId(character.id);
+    if (ids.has(character.id)) throw new Error("Duplicate character id");
+    ids.add(character.id);
+    if (character.model && !/\.glb$/i.test(character.model))
+      throw new Error("Character model must be GLB");
+    if (
+      !/^#[0-9a-f]{6}$/i.test(character.subtitle_color) ||
+      !/^#[0-9a-f]{6}$/i.test(character.subtitle_outline)
+    )
+      throw new Error("Invalid character subtitle color");
+    if (project.voice.engine === "aivis") {
+      if (
+        !Number.isSafeInteger(character.voice?.style_id) ||
+        character.voice.style_id < 0
+      )
+        throw new Error("Invalid character Style ID: " + character.id);
+      finite(character.voice.speed, 0.5, 2, character.id + ".voice.speed");
+    }
+  }
+  return characters;
+}
 export async function prepare() {
   const project = await readJSON("project.json");
   for (const file of [
     project.layout.frame,
     ...Object.values(project.layout.fonts).map((font) => font.path),
-    project.character.model,
+    ...projectCharacters(project).map((character) => character.model),
     project.audio.bgm,
   ].filter(Boolean))
     await fs.access(localPath(file));
@@ -100,7 +157,7 @@ export function wavDuration(buffer) {
     throw new Error("Engine response is not RIFF/WAVE");
   let byteRate = 0,
     dataBytes = 0;
-  for (let offset = 12; offset + 8 <= buffer.length; ) {
+  for (let offset = 12; offset + 8 <= buffer.length;) {
     const name = buffer.toString("ascii", offset, offset + 4);
     const length = buffer.readUInt32LE(offset + 4);
     if (offset + 8 + length > buffer.length) throw new Error("Truncated WAV");

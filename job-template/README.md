@@ -31,9 +31,29 @@ project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕�
 
 `runtime/src/BiimScene.tsx`にsceneを渡すとnote_top / note_bottomを配置します。そのchildrenが中央の自由なRemotion映像、characterが字幕を避けたキャラ領域です。plan/narration.jsonのsegmentsを空にして`npm run voice`を実行すると、scenes[].scriptから句点ごとの読み上げと字幕を生成します。音声出力のscene_idと実測秒を使って各Sequenceを同期してください。個別の開始時刻が必要ならnarration.jsonで上書きします。
 
-同梱の`biim-standard-v1`（project.layout）、枠SVG、Noto Sans JP（本文・ノート）、M PLUS Rounded 1c ExtraBold（字幕）が標準です。枠は背景#1e1e1e・枠線#cccccc、ノートは白系、字幕は赤字＋黒4px・白9pxの縁取りです。Fontsコンポーネントが明示的にファイルを読み込み、完了までレンダリングを待ちます。フォント欠損はエラーにします。標準コンポーネントを使う限り同じ枠・書体を使えます。フォントの権利表示とOFL全文はassets/fonts/にあります。独自の演出を作る場合もBiim場面の枠・書体を揃えてください。
+同梱の`biim-standard-v1`（project.layout）、枠SVG、Noto Sans JP（本文・ノート）、M PLUS Rounded 1c ExtraBold（字幕）が標準です。枠は背景#1e1e1e・枠線#cccccc、ノートは白系、字幕は1人目が赤、2人目が青＋白9pxの縁取りを既定とし、話者ごとの指定色を使用します。Fontsコンポーネントが明示的にファイルを読み込み、完了までレンダリングを待ちます。フォント欠損はエラーにします。標準コンポーネントを使う限り同じ枠・書体を使えます。フォントの権利表示とOFL全文はassets/fonts/にあります。独自の演出を作る場合もBiim場面の枠・書体を揃えてください。
 
-## ファイル
+## キャラクター・全画面・縦動画
+
+`project.characters`に1人または2人の設定を保存します。`character_mode`は`solo` / `duo`。各人の`id / name / reading / personality / speaking_style / role / notes / position / model / subtitle_color / subtitle_outline / voice`を制作に反映してください。`project.character`は1人目の互換コピーです。新規シーンは`characters`を参照し、変更もこちらへ反映します。
+
+掛け合いは次のように記入します。`plan/narration.json`のsegmentsでも`speaker_id`を必ず指定します。
+
+```json
+{"id":"scene001","script":"掛け合いの概要（任意）","note_top":"要点","note_bottom":"補足","duration_sec":6,"dialogue":[
+  {"speaker_id":"character1","text":"葵さん、虹のしくみを説明します。"},
+  {"speaker_id":"character2","text":"なぜ色が分かれるの？"}
+]}
+```
+
+segmentsが空なら`npm run voice`はdialogueを優先し、1人解説では従来通りscriptを句点などで分割します。話者のStyle ID・話速を適用し、出力の各clipにspeaker_idを保存して字幕色へ反映します。同じStyle IDは同じ声です。字幕は1人目が赤・2人目が青＋白ふちを既定とし、指定色を使います。textは字幕の表記を保持し、名前のreadingは音声だけに適用します。`spoken_text`は読み上げ原稿だけを上書きします。開始時刻は従来通りstart_secで調整できます。
+
+`BiimScene`の`character`と`secondCharacter`へ各モデルの`Character3D`を渡します。Biimの既定配置はキャラ1が左・字幕枠が中央・キャラ2が右。positionに応じてキャラ領域・字幕領域・同梱SVGの字幕枠を調整済みです。Character3Dは枠内を大きく使い、キャンバスの上端を20%せり出させます。モデルや動作に応じて`sizeMultiplier`（既定1.2）を調整できます。口パクは実モデルのリグに合わせて実装してください。
+
+`project.layout.mode="fullscreen"`では映像領域がキャンバス全体となり、Biim枠・固定ノート欄を表示しません。縦9:16は常にこのモードです。寸法は`project.video`に従い、字幕とキャラは縦横別の領域へ配置します。Biim設定中の一部を全画面にする場合は`scene.biim=false`を記録し、そのsceneをBiimSceneに渡すと、字幕も音声のscene_idから追従します。
+
+## ファイル一覧
+
 - project.json / brief.md: UIで指定した制作条件と原文の指示。
 - sources/: 資料。ファイル名の重複は解消している。URLはproject.jsonに記録するだけで未取得。
 - assets/: GLB、添付BGM、音声・SEなど。runtimeの各コマンドがruntime/public/assetsへ同期し、staticFile('assets/…')で使用する。編集元はassets/。public内のコピーは直接編集しない。
@@ -49,7 +69,7 @@ plan/narration.jsonのsegmentsに`id / text / start_sec`を記入。start_secを
 {"segments": [{"id": "intro", "text": "虹はどうしてできるのでしょうか。", "start_sec": 0}]}
 ```
 
-`npm run voice`は/audio_queryと/synthesisを利用し、project.voiceのStyle ID・話速を適用。assets/audio/narration.jsonにWAVパス・開始秒・実測秒・字幕を出力する。SRTもassets/audio/narration.srtに保存。字幕は発話単位で、文字ごとの正確なアライメントではない。専門用語の読みや字幕の行長はエージェントが調整する。
+`npm run voice`は/audio_queryと/synthesisを利用し、project.charactersの話者ごとのStyle ID・話速を適用します。旧形式の1人ジョブではproject.voiceを参照します。assets/audio/narration.jsonにWAVパス・開始秒・実測秒・字幕・speaker_idを出力し、SRTもassets/audio/narration.srtに保存します。字幕は発話単位で、文字ごとの正確なアライメントではありません。専門用語の読みや字幕の行長はエージェントが調整してください。
 
 ## BGM・SE
 generate_bgm_seがtrueなら、場面に合う簡単な音を制作。添付BGMを優先。例:

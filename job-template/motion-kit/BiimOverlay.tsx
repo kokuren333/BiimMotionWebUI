@@ -1,22 +1,27 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AbsoluteFill, Img, staticFile, useVideoConfig } from "remotion";
 import project from "../project.json";
+import { biimEnabled, regionsFor } from "../runtime/src/Presentation";
 
 export const BiimOverlay = ({
   children,
   noteTop,
   noteBottom,
   character,
+  secondCharacter,
   enabled = true,
 }: {
   children: ReactNode;
   noteTop?: ReactNode;
   noteBottom?: ReactNode;
   character?: ReactNode;
+  secondCharacter?: ReactNode;
   enabled?: boolean;
 }) => {
   const { width } = useVideoConfig();
   const layout = project.layout;
+  enabled = enabled && biimEnabled();
+  const regions = regionsFor(enabled);
   const region = (values: number[]): CSSProperties => ({
     position: "absolute",
     left: `${(values[0] / layout.base_width) * 100}%`,
@@ -45,13 +50,13 @@ export const BiimOverlay = ({
       <div
         style={
           enabled
-            ? { ...region(layout.regions.main), overflow: "hidden" }
+            ? { ...region(regions.main), overflow: "hidden" }
             : { position: "absolute", inset: 0 }
         }
       >
         {children}
       </div>
-      {enabled && (
+      {enabled && layout.frame && (
         <>
           <Img
             src={staticFile(layout.frame)}
@@ -67,11 +72,18 @@ export const BiimOverlay = ({
           <div style={noteStyle("note_bottom")}>{noteBottom}</div>
         </>
       )}
-      {character && (
-        <div style={{ ...region(layout.regions.character), zIndex: 2 }}>
+      {project.direction.character_usage !== "none" && character && (
+        <div style={{ ...region(regions.character), zIndex: 2 }}>
           {character}
         </div>
       )}
+      {project.direction.character_usage !== "none" &&
+        project.character_mode === "duo" &&
+        secondCharacter && (
+          <div style={{ ...region(regions.character_second), zIndex: 2 }}>
+            {secondCharacter}
+          </div>
+        )}
     </AbsoluteFill>
   );
 };

@@ -5,6 +5,7 @@ import { KineticText } from "../motion-kit/KineticText";
 import { Character3D } from "../motion-kit/Character3D";
 import { DrawArrow } from "../motion-kit/DrawArrow";
 import { Pop } from "../motion-kit/Pop";
+import { biimEnabled, regionsFor } from "../runtime/src/Presentation";
 
 export const Scene001 = () => {
   const frame = useCurrentFrame();
@@ -17,18 +18,28 @@ export const Scene001 = () => {
       "動作確認用のシーンです。台本と構成を作り、自由に映像を実装してください。",
     duration_sec: 6,
   };
+  const regions = regionsFor(biimEnabled(scene));
+  const renderCharacter = (index: number) => {
+    if (
+      project.direction.character_usage === "none" ||
+      !project.characters[index]
+    )
+      return undefined;
+    const region = index === 0 ? regions.character : regions.character_second;
+    return (
+      <Character3D
+        model={project.characters[index].model}
+        width={Math.round((width * region[2]) / project.layout.base_width)}
+        height={Math.round((height * region[3]) / project.layout.base_height)}
+      />
+    );
+  };
+  const portrait = height > width;
   return (
     <BiimScene
       scene={scene}
-      character={
-        project.direction.character_usage !== "none" ? (
-          <Character3D
-            model={project.character.model}
-            width={Math.round((width * 330) / 1920)}
-            height={Math.round((height * 332) / 1080)}
-          />
-        ) : undefined
-      }
+      character={renderCharacter(0)}
+      secondCharacter={renderCharacter(1)}
     >
       <AbsoluteFill
         style={{
@@ -38,13 +49,19 @@ export const Scene001 = () => {
           color: "#f5f8e9",
         }}
       >
-        <div style={{ fontSize: "1.4cqw", letterSpacing: 4, color: "#c2d594" }}>
+        <div
+          style={{
+            fontSize: portrait ? "3cqw" : "1.4cqw",
+            letterSpacing: 4,
+            color: "#c2d594",
+          }}
+        >
           MOTION JOB · STARTER SCENE
         </div>
         <KineticText
           text={project.title}
           style={{
-            fontSize: "5cqw",
+            fontSize: portrait ? "8cqw" : "5cqw",
             fontWeight: 800,
             lineHeight: 1.5,
             marginTop: "5%",
@@ -53,6 +70,7 @@ export const Scene001 = () => {
         <div
           style={{
             display: "flex",
+            flexDirection: portrait ? "column" : "row",
             gap: "7%",
             marginTop: "8%",
             alignItems: "center",
@@ -61,8 +79,8 @@ export const Scene001 = () => {
           <Pop>
             <div
               style={{
-                width: "14cqw",
-                height: "14cqw",
+                width: portrait ? "28cqw" : "14cqw",
+                height: portrait ? "28cqw" : "14cqw",
                 borderRadius: "50%",
                 background: "#ddeb9a",
                 transform: `scale(${1 + Math.sin((frame / fps) * 2) * 0.03})`,

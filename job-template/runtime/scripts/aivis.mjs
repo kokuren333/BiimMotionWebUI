@@ -3,13 +3,74 @@ import path from "node:path";
 import {
   finite,
   localPath,
+  narrationSpeaker,
+  projectCharacters,
   prepare,
   readJSON,
   root,
   validId,
+  validateCharacters,
   wavDuration,
   writeJSON,
 } from "./lib.mjs";
+
+export function sceneSegments(project) {
+  return (project.scenes ?? []).flatMap((scene) => {
+    validId(scene.id);
+    if (
+      scene.dialogue !== undefined &&
+      (!Array.isArray(scene.dialogue) || !scene.dialogue.length)
+    )
+      throw new Error("Scene dialogue must be a non-empty array: " + scene.id);
+    if (
+      project.character_mode === "duo" &&
+      !scene.dialogue &&
+      !scene.speaker_id
+    )
+      throw new Error(
+        "Duo scenes require dialogue with speaker_id: " + scene.id,
+      );
+    const turns = scene.dialogue ?? [
+      { text: scene.script, speaker_id: scene.speaker_id },
+    ];
+    return turns.flatMap((turn, turnIndex) => {
+      if (typeof turn.text !== "string" || !turn.text.trim())
+        throw new Error("Scene narration text is empty: " + scene.id);
+      const texts =
+        turn.spoken_text !== undefined
+          ? [turn.text]
+          : (turn.text.match(/[^。！？!?]+[。！？!?]?/g) ?? []);
+      return texts
+        .map((text, i) => ({
+          id: scene.dialogue
+            ? `${scene.id}-${turnIndex + 1}-${i + 1}`
+            : `${scene.id}-${i + 1}`,
+          scene_id: scene.id,
+          text: text.trim(),
+          ...(turn.speaker_id ? { speaker_id: turn.speaker_id } : {}),
+          ...(turn.spoken_text !== undefined
+            ? { spoken_text: turn.spoken_text }
+            : {}),
+        }))
+        .filter((segment) => segment.text);
+    });
+  });
+}
+
+export function spokenText(project, segment) {
+  if (segment.spoken_text !== undefined) return segment.spoken_text;
+  const names = projectCharacters(project)
+    .filter((character) => character.name && character.reading)
+    .sort((a, b) => b.name.length - a.name.length);
+  if (!names.length) return segment.text;
+  const escaped = names.map((character) =>
+    character.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+  return segment.text.replace(
+    new RegExp(escaped.join("|"), "g"),
+    (name) => names.find((character) => character.name === name).reading,
+  );
+}
 
 export async function synthesizeNarration() {
   const project = await readJSON("project.json");
@@ -26,24 +87,13 @@ export async function synthesizeNarration() {
   if (!Number.isSafeInteger(style) || style < 0)
     throw new Error("Invalid Aivis Style ID");
   finite(project.voice.speed, 0.5, 2, "voice.speed");
+  validateCharacters(project);
   const plan = await readJSON("plan/narration.json");
   let segments = plan.segments;
   if (!Array.isArray(segments))
     throw new Error("plan/narration.json segments must be an array");
   if (!segments.length) {
-    // BiimSlideMakerと同様、scriptを句点・疑問符・感嘆符で発話単位に分割。
-    segments = (project.scenes ?? []).flatMap((scene) => {
-      validId(scene.id);
-      if (typeof scene.script !== "string")
-        throw new Error("Scene script must be a string: " + scene.id);
-      return (scene.script.match(/[^。！？!?]+[。！？!?]?/g) ?? [])
-        .map((text, i) => ({
-          id: `${scene.id}-${i + 1}`,
-          scene_id: scene.id,
-          text: text.trim(),
-        }))
-        .filter((segment) => segment.text);
-    });
+    segments = sceneSegments(project);
   }
   if (!segments.length)
     throw new Error(
@@ -56,6 +106,12 @@ export async function synthesizeNarration() {
     ids.add(segment.id);
     if (typeof segment.text !== "string" || !segment.text.trim())
       throw new Error("Narration text is empty");
+    if (
+      segment.spoken_text !== undefined &&
+      (typeof segment.spoken_text !== "string" || !segment.spoken_text.trim())
+    )
+      throw new Error("spoken_text must be a non-empty string");
+    narrationSpeaker(project, segment);
     if (segment.start_sec !== undefined)
       finite(segment.start_sec, 0, 7200, "start_sec");
   }
@@ -91,15 +147,20 @@ export async function synthesizeNarration() {
   const pending = [];
   let end = 0;
   for (const segment of segments) {
+    const speaker = narrationSpeaker(project, segment);
+    const style = speaker.voice.style_id;
     const start = segment.start_sec ?? end;
     if (start < end - 0.001)
       throw new Error(
         `Narration ${segment.id} overlaps the previous segment. Adjust start_sec using measured audio duration.`,
       );
     const query = await (
-      await request("audio_query", { text: segment.text, speaker: style })
+      await request("audio_query", {
+        text: spokenText(project, segment),
+        speaker: style,
+      })
     ).json();
-    query.speedScale = project.voice.speed;
+    query.speedScale = speaker.voice.speed;
     const audio = Buffer.from(
       await (
         await request(
@@ -114,6 +175,7 @@ export async function synthesizeNarration() {
     pending.push({ relative, audio });
     clips.push({
       id: segment.id,
+      speaker_id: speaker.id,
       ...(segment.scene_id ? { scene_id: segment.scene_id } : {}),
       path: relative,
       text: segment.text,

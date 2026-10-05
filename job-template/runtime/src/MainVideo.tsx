@@ -11,6 +11,7 @@ import narration from "../data/narration.json";
 import sound from "../data/sound-design.json";
 import { SceneTimeline } from "../../scenes";
 import { Captions } from "./Captions";
+import { sceneUsesBiim } from "./Presentation";
 
 type Clip = {
   id: string;
@@ -18,6 +19,8 @@ type Clip = {
   start_sec: number;
   duration_sec: number;
   text?: string;
+  speaker_id?: string;
+  scene_id?: string;
   volume?: number;
   loop?: boolean;
   play_duration_sec?: number;
@@ -46,6 +49,8 @@ export const MainVideo = () => {
             <Audio src={staticFile(clip.path)} />
             <Captions
               text={clip.text ?? ""}
+              speakerId={clip.speaker_id}
+              enabled={sceneUsesBiim(clip.scene_id)}
               reserveCharacterSpace={
                 project.direction.character_usage !== "none"
               }

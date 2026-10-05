@@ -16,6 +16,14 @@ project.scenes = [
   },
 ];
 project.character.model = "assets/character.glb";
+project.characters[0].model = "assets/character.glb";
+if (project.character_mode === "duo") {
+  project.characters[1].model = "assets/character2.glb";
+  project.scenes[0].dialogue = [
+    { speaker_id: "character1", text: "2人のキャラクターで解説します。" },
+    { speaker_id: "character2", text: "字幕の色と配置を確認しましょう。" },
+  ];
+}
 await fs.writeFile(
   path.join(root, "project.json"),
   JSON.stringify(project, null, 2),
@@ -140,6 +148,8 @@ output.writeUInt32LE(binary.length, binOffset);
 output.writeUInt32LE(0x004e4942, binOffset + 4);
 binary.copy(output, binOffset + 8);
 await fs.writeFile(path.join(root, "assets/character.glb"), output);
+if (project.character_mode === "duo")
+  await fs.writeFile(path.join(root, "assets/character2.glb"), output);
 console.log(
   "Prepared note_top/note_bottom/script scene, animated GLB cube and four sound cues.",
 );

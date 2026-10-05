@@ -1,4 +1,18 @@
-# Verification — 2026-10-04
+# Verification — 2026-10-06
+
+## Character modes and output layouts (2026-10-06)
+
+- `npm test`: all 11 tests passed. New coverage verifies solo/duo settings, separate model bytes, inactive second-model exclusion, names/readings, custom subtitle colors, per-character voice settings, portrait/fullscreen enforcement, character/subtitle bounds, and the generated Biim subtitle-frame SVG for all left/right placements.
+- The HTTP-mocked Aivis integration verifies alternating speaker IDs, different Style IDs and speeds, name readings used only for synthesis, explicit spoken_text, unchanged caption spelling, second-model asset synchronization, and rejection of missing/unknown speakers before network requests or manifest replacement. This update did not call a real Aivis engine.
+- `npm run build -- --base=/BiimMotionWebUI/`: passed. `git diff --check`: passed.
+- Browser inspection confirmed solo/duo controls, character-specific fields, color previews, the vertical Full HD / HD / 4K choices, the automatically enabled/disabled fullscreen switch for portrait output, and the complete updated default design text.
+- Generated ZIPs were extracted into the existing smoke workspace. Runtime validation, including TypeScript, passed for Biim duo (640×360), fullscreen duo (640×360), and portrait duo (360×640).
+- Rendered and visually inspected frame 135 for all three layouts with two self-authored animated GLB cubes and synthetic caption manifests. Confirmed the blue/white speaker-2 caption, central Biim subtitle frame, separate left/right model positions, larger model framing with slight upward overlap, and frame-free horizontal/vertical canvases. Speaker-1 red/white rendering was also inspected before the final model-fitting adjustment.
+- Model fitting accounts for canvas aspect ratio and model depth to avoid the clipping found during the initial enlargement check. Character3D exposes sizeMultiplier (default 1.2) for scene-level adjustments.
+- `npm run preview -- --gl=swangle --concurrency=2 --log=error` also produced the portrait smoke MP4. FFprobe confirmed H.264 at 180×320 (half-scale preview of 360×640), 30fps, AAC audio, and a 6.016-second container duration. Caption audio in this fixture is synthetic silence; this check verifies rendering and output orientation rather than voice quality.
+- Rendered fixtures are structural/visual smoke checks, not production character rigs or lip-sync validation. Actual scenes may move or resize the models as directed in the brief.
+
+## Previous baseline (2026-10-04)
 
 ## WebUI and ZIP
 

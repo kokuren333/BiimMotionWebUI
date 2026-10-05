@@ -7,10 +7,13 @@ import {
 } from "react";
 import {
   createProject,
+  characterProfiles,
   defaults,
   generateJob,
   urlLines,
   validateForm,
+  usesFullScreen,
+  type CharacterForm,
   type JobAssets,
   type MotionForm,
 } from "./job";
@@ -168,6 +171,7 @@ export default function App() {
   const [form, setForm] = useState<MotionForm>({ ...defaults });
   const [sources, setSources] = useState<File[]>([]);
   const [character, setCharacter] = useState<File>();
+  const [secondCharacter, setSecondCharacter] = useState<File>();
   const [bgm, setBgm] = useState<File>();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -194,9 +198,20 @@ export default function App() {
       size: character.size,
       type: character.type,
     },
+    secondCharacter:
+      form.characterMode === "duo" && secondCharacter
+        ? {
+            name: secondCharacter.name,
+            data: secondCharacter,
+            size: secondCharacter.size,
+            type: secondCharacter.type,
+          }
+        : undefined,
     bgm: bgm && { name: bgm.name, data: bgm, size: bgm.size, type: bgm.type },
   };
   const project = createProject(form, assets);
+  const fullScreen = usesFullScreen(form);
+  const portrait = form.height > form.width;
   const completed = [
     Boolean(
       form.title.trim() && form.description.trim() && form.audience.trim(),
@@ -212,6 +227,7 @@ export default function App() {
   const totalBytes =
     sources.reduce((sum, file) => sum + file.size, 0) +
     (character?.size ?? 0) +
+    (form.characterMode === "duo" ? (secondCharacter?.size ?? 0) : 0) +
     (bgm?.size ?? 0);
   function changed() {
     setSuccess("");
@@ -219,6 +235,34 @@ export default function App() {
   }
   function field<K extends keyof MotionForm>(key: K, value: MotionForm[K]) {
     setForm((previous) => ({ ...previous, [key]: value }));
+    changed();
+  }
+  function characterField<K extends keyof CharacterForm>(
+    index: number,
+    key: K,
+    value: CharacterForm[K],
+  ) {
+    const firstKeys = {
+      name: "characterName",
+      reading: "characterReading",
+      personality: "characterPersonality",
+      speakingStyle: "characterSpeakingStyle",
+      role: "characterRole",
+      notes: "characterNotes",
+      position: "characterPosition",
+      subtitleColor: "subtitleColor",
+      styleId: "styleId",
+      voiceSpeed: "voiceSpeed",
+      voiceNotes: "voiceNotes",
+    } as const;
+    setForm((previous) =>
+      index === 0
+        ? { ...previous, [firstKeys[key]]: value }
+        : {
+            ...previous,
+            secondCharacter: { ...previous.secondCharacter, [key]: value },
+          },
+    );
     changed();
   }
   function addSources(list: FileList | File[]) {
@@ -584,23 +628,50 @@ export default function App() {
                     細部を決めすぎず、目指す雰囲気を伝えます。
                   </p>
                   <div className="direction-tags" aria-hidden="true">
-                    <span>Biim layout</span>
+                    <span>{fullScreen ? "Full screen" : "Biim layout"}</span>
                     <span>Motion graphics</span>
                     <span>3D character</span>
                   </div>
+                  <label className="check-label layout-switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={fullScreen}
+                      disabled={portrait}
+                      onChange={(e) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          fullScreen: e.target.checked,
+                          biimUsage: e.target.checked ? "never" : "sometimes",
+                        }));
+                        changed();
+                      }}
+                    />
+                    <span>
+                      全画面アニメーション・モーショングラフィックス
+                      <small>
+                        {portrait
+                          ? "縦9:16ではBiim枠を使用しません。"
+                          : "オンにするとBiim枠を外し、映像に画面全体を使います。"}
+                      </small>
+                    </span>
+                  </label>
                   <label>
                     デザイン方向性
                     <textarea
-                      rows={4}
+                      rows={6}
                       value={form.design}
                       onChange={(e) => field("design", e.target.value)}
                       placeholder="配色、タイポグラフィ、画面の雰囲気、モーションの参考など。"
                     />
                   </label>
-                  <small>
-                    標準Biim枠は黒系背景（#1e1e1e）＋グレーの枠線（#cccccc）。Opusが場面ごとにnote_top（右上）・note_bottom（右下）・script（読み上げと字幕）を作成します。本文・ノートはNoto
-                    Sans JP、字幕はM PLUS Rounded 1c。枠・フォントは同梱します。
-                  </small>
+                  {!fullScreen && (
+                    <small>
+                      標準Biim枠は黒系背景（#1e1e1e）＋グレーの枠線（#cccccc）。Opusが場面ごとにnote_top（右上）・note_bottom（右下）・script（読み上げと字幕）を作成します。本文・ノートはNoto
+                      Sans JP、字幕はM PLUS Rounded
+                      1c。枠・フォントは同梱します。
+                    </small>
+                  )}
                   <div className="creative-note">
                     <span>↗</span>
                     <p>
@@ -617,44 +688,251 @@ export default function App() {
                   <p className="section-intro">
                     3Dキャラクターを、説明を支える演者に。
                   </p>
-                  <label>
-                    キャラクター設定
-                    <textarea
-                      rows={3}
-                      value={form.characterNotes}
-                      onChange={(e) => field("characterNotes", e.target.value)}
-                      placeholder="性格、役割、表情や動きの方向性。"
-                    />
-                  </label>
-                  <div className="asset-picker">
-                    <span className="asset-icon">
-                      <Icon name="box" size={24} />
-                    </span>
-                    <div>
-                      <strong>3Dキャラクターモデル</strong>
-                      <small>GLB形式 · 任意</small>
-                    </div>
-                    <label className="file-button">
-                      モデルを選ぶ
-                      <input
-                        type="file"
-                        accept=".glb"
-                        aria-label="3Dモデルを選択"
-                        onChange={(e) => {
-                          setCharacter(e.target.files?.[0]);
-                          e.target.value = "";
-                          changed();
-                        }}
-                      />
-                    </label>
-                  </div>
-                  <AttachmentList
-                    files={character ? [character] : []}
-                    remove={() => {
-                      setCharacter(undefined);
-                      changed();
-                    }}
-                  />
+                  {select("characterMode", "キャラクターモード", [
+                    ["solo", "1人で解説"],
+                    ["duo", "2人の掛け合い"],
+                  ])}
+                  {characterProfiles(form).map((profile, index) => {
+                    const model = index === 0 ? character : secondCharacter;
+                    const setModel =
+                      index === 0 ? setCharacter : setSecondCharacter;
+                    const label = `${index + 1}人目`;
+                    return (
+                      <fieldset className="character-card" key={index}>
+                        <legend>
+                          {label}
+                          {profile.name ? ` · ${profile.name}` : ""}
+                        </legend>
+                        <div className="row">
+                          <label>
+                            名前（表記）
+                            <input
+                              aria-label={`${label}の名前（表記）`}
+                              value={profile.name}
+                              onChange={(e) =>
+                                characterField(index, "name", e.target.value)
+                              }
+                              placeholder="例：春日あかり"
+                            />
+                          </label>
+                          <label>
+                            読み仮名
+                            <input
+                              aria-label={`${label}の読み仮名`}
+                              value={profile.reading}
+                              onChange={(e) =>
+                                characterField(index, "reading", e.target.value)
+                              }
+                              placeholder="例：かすがあかり"
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          役割
+                          <input
+                            aria-label={`${label}の役割`}
+                            value={profile.role}
+                            onChange={(e) =>
+                              characterField(index, "role", e.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          キャラの配置
+                          <select
+                            aria-label={`${label}の配置`}
+                            value={profile.position}
+                            onChange={(e) =>
+                              characterField(
+                                index,
+                                "position",
+                                e.target.value as CharacterForm["position"],
+                              )
+                            }
+                          >
+                            <option value="left">左</option>
+                            <option value="right">右</option>
+                          </select>
+                          <small>
+                            Biim枠の字幕位置と幅は、キャラの配置に合わせて自動調整します。
+                          </small>
+                        </label>
+                        <label>
+                          性格
+                          <textarea
+                            aria-label={`${label}の性格`}
+                            rows={2}
+                            value={profile.personality}
+                            onChange={(e) =>
+                              characterField(
+                                index,
+                                "personality",
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          口調
+                          <textarea
+                            aria-label={`${label}の口調`}
+                            rows={2}
+                            value={profile.speakingStyle}
+                            onChange={(e) =>
+                              characterField(
+                                index,
+                                "speakingStyle",
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          表情・動きなどへの指示
+                          <textarea
+                            aria-label={`${label}の動きへの指示`}
+                            rows={2}
+                            value={profile.notes}
+                            onChange={(e) =>
+                              characterField(index, "notes", e.target.value)
+                            }
+                          />
+                        </label>
+                        <div className="subtitle-settings">
+                          <label>
+                            字幕色
+                            <input
+                              type="color"
+                              aria-label={`${label}の字幕色`}
+                              value={
+                                /^#[0-9a-f]{6}$/i.test(profile.subtitleColor)
+                                  ? profile.subtitleColor
+                                  : index === 0
+                                    ? "#ff0000"
+                                    : "#0000ff"
+                              }
+                              onChange={(e) =>
+                                characterField(
+                                  index,
+                                  "subtitleColor",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </label>
+                          <label>
+                            HEX
+                            <input
+                              className="color-hex"
+                              aria-label={`${label}の字幕色（HEX）`}
+                              value={profile.subtitleColor}
+                              maxLength={7}
+                              onChange={(e) =>
+                                characterField(
+                                  index,
+                                  "subtitleColor",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </label>
+                          <span
+                            className="subtitle-sample"
+                            style={{ color: profile.subtitleColor }}
+                          >
+                            {profile.name || label}の字幕
+                          </span>
+                          <small>白ふち · {profile.subtitleColor}</small>
+                        </div>
+                        <div className="asset-picker">
+                          <span className="asset-icon">
+                            <Icon name="box" size={24} />
+                          </span>
+                          <div>
+                            <strong>{label}の3Dモデル</strong>
+                            <small>GLB形式 · 任意</small>
+                          </div>
+                          <label className="file-button">
+                            モデルを選ぶ
+                            <input
+                              type="file"
+                              accept=".glb"
+                              aria-label={`${label}の3Dモデルを選択`}
+                              onChange={(e) => {
+                                setModel(e.target.files?.[0]);
+                                e.target.value = "";
+                                changed();
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <AttachmentList
+                          files={model ? [model] : []}
+                          remove={() => {
+                            setModel(undefined);
+                            changed();
+                          }}
+                        />
+                        {form.characterMode === "duo" &&
+                          form.voiceEngine === "aivis" && (
+                            <>
+                              <div className="row">
+                                <label>
+                                  Style ID
+                                  <input
+                                    aria-label={`${label}のStyle ID`}
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    value={profile.styleId}
+                                    onChange={(e) =>
+                                      characterField(
+                                        index,
+                                        "styleId",
+                                        Number(e.target.value),
+                                      )
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  話速
+                                  <input
+                                    aria-label={`${label}の話速`}
+                                    type="number"
+                                    min={0.5}
+                                    max={2}
+                                    step={0.05}
+                                    value={profile.voiceSpeed}
+                                    onChange={(e) =>
+                                      characterField(
+                                        index,
+                                        "voiceSpeed",
+                                        Number(e.target.value),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              <label>
+                                声・読み方への指示
+                                <textarea
+                                  aria-label={`${label}の声への指示`}
+                                  rows={2}
+                                  value={profile.voiceNotes}
+                                  onChange={(e) =>
+                                    characterField(
+                                      index,
+                                      "voiceNotes",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </label>
+                            </>
+                          )}
+                      </fieldset>
+                    );
+                  })}
                   <small>
                     モデル未添付でもジョブを作成できます。必要な素材や代替案はOpusが整理します。
                   </small>
@@ -681,47 +959,58 @@ export default function App() {
                           制作するPCで起動するエンジンのURLです。WebUIからは接続しません。
                         </small>
                       </label>
-                      <div className="row">
-                        <label>
-                          Style ID
-                          <input
-                            type="number"
-                            min={0}
-                            step={1}
-                            value={form.styleId}
-                            onChange={(e) =>
-                              field("styleId", Number(e.target.value))
-                            }
-                          />
-                        </label>
-                        <label>
-                          話速
-                          <div className="unit-input">
+                      {form.characterMode === "solo" && (
+                        <div className="row">
+                          <label>
+                            Style ID
                             <input
-                              aria-label="話速"
                               type="number"
-                              min={0.5}
-                              max={2}
-                              step={0.05}
-                              value={form.voiceSpeed}
+                              min={0}
+                              step={1}
+                              value={form.styleId}
                               onChange={(e) =>
-                                field("voiceSpeed", Number(e.target.value))
+                                field("styleId", Number(e.target.value))
                               }
                             />
-                            <span>×</span>
-                          </div>
-                        </label>
-                      </div>
+                          </label>
+                          <label>
+                            話速
+                            <div className="unit-input">
+                              <input
+                                aria-label="話速"
+                                type="number"
+                                min={0.5}
+                                max={2}
+                                step={0.05}
+                                value={form.voiceSpeed}
+                                onChange={(e) =>
+                                  field("voiceSpeed", Number(e.target.value))
+                                }
+                              />
+                              <span>×</span>
+                            </div>
+                          </label>
+                        </div>
+                      )}
                     </>
                   )}
-                  <label>
-                    声・読み方への指示
-                    <textarea
-                      rows={2}
-                      value={form.voiceNotes}
-                      onChange={(e) => field("voiceNotes", e.target.value)}
-                    />
-                  </label>
+                  {form.characterMode === "solo" && (
+                    <label>
+                      声・読み方への指示
+                      <textarea
+                        rows={2}
+                        value={form.voiceNotes}
+                        onChange={(e) => field("voiceNotes", e.target.value)}
+                      />
+                    </label>
+                  )}
+                  {form.characterMode === "duo" && (
+                    <small>
+                      Style
+                      ID・話速・読み方は各キャラクター欄で設定します。同じStyle
+                      IDでは同じ声になります。
+                    </small>
+                  )}
                   <div className="asset-picker">
                     <span className="asset-icon music">♫</span>
                     <div>
@@ -771,6 +1060,30 @@ export default function App() {
                       placeholder="音の雰囲気、SEを入れたい場面、避けたい音など。"
                     />
                   </label>
+                  <label>
+                    画面の向き
+                    <select
+                      value={portrait ? "portrait" : "landscape"}
+                      onChange={(e) => {
+                        const toPortrait = e.target.value === "portrait";
+                        setForm((prev) => ({
+                          ...prev,
+                          width: Math[toPortrait ? "min" : "max"](
+                            prev.width,
+                            prev.height,
+                          ),
+                          height: Math[toPortrait ? "max" : "min"](
+                            prev.width,
+                            prev.height,
+                          ),
+                        }));
+                        changed();
+                      }}
+                    >
+                      <option value="landscape">横16:9</option>
+                      <option value="portrait">縦9:16（Biim枠なし）</option>
+                    </select>
+                  </label>
                   <div className="row">
                     <label>
                       出力解像度
@@ -784,9 +1097,22 @@ export default function App() {
                           changed();
                         }}
                       >
-                        <option value="1920x1080">Full HD · 1920 × 1080</option>
-                        <option value="1280x720">HD · 1280 × 720</option>
-                        <option value="3840x2160">4K · 3840 × 2160</option>
+                        {(portrait
+                          ? [
+                              [1080, 1920, "Full HD"],
+                              [720, 1280, "HD"],
+                              [2160, 3840, "4K"],
+                            ]
+                          : [
+                              [1920, 1080, "Full HD"],
+                              [1280, 720, "HD"],
+                              [3840, 2160, "4K"],
+                            ]
+                        ).map(([w, h, title]) => (
+                          <option key={`${w}x${h}`} value={`${w}x${h}`}>
+                            {title} · {w} × {h}
+                          </option>
+                        ))}
                       </select>
                     </label>
                     <label>
@@ -842,11 +1168,12 @@ export default function App() {
                         ["balanced", "バランスよく"],
                         ["rich", "豊富に使う"],
                       ])}
-                      {select("biimUsage", "Biimレイアウト使用率", [
-                        ["never", "使わない"],
-                        ["sometimes", "場面に応じて"],
-                        ["mostly", "主なレイアウトにする"],
-                      ])}
+                      {!fullScreen &&
+                        select("biimUsage", "Biimレイアウト使用率", [
+                          ["never", "使わない"],
+                          ["sometimes", "場面に応じて"],
+                          ["mostly", "主なレイアウトにする"],
+                        ])}
                     </div>
                     {select("characterUsage", "3Dキャラ登場頻度", [
                       ["none", "登場させない"],
@@ -930,7 +1257,7 @@ export default function App() {
                       {preview === "layout" && (
                         <div className="layout-preview">
                           <div
-                            className={`video-schematic ${form.biimUsage === "never" ? "full-screen" : ""}`}
+                            className={`video-schematic ${fullScreen ? "full-screen" : ""} ${portrait ? "portrait" : ""} ${form.characterMode === "duo" ? "duo" : ""}`}
                           >
                             <div className="schematic-main">
                               <span className="scene-label">SCENE / 01</span>
@@ -956,7 +1283,7 @@ export default function App() {
                                 <path d="M20 70h195" stroke="#506555" />
                               </svg>
                             </div>
-                            {form.biimUsage !== "never" && (
+                            {!fullScreen && (
                               <div className="schematic-notes">
                                 <span>POINT</span>
                                 <div />
@@ -970,7 +1297,13 @@ export default function App() {
                               </div>
                             )}
                             {form.characterUsage !== "none" && (
-                              <div className="schematic-character">
+                              <div
+                                className="schematic-character"
+                                style={{
+                                  left: `${(project.layout.regions.character[0] / project.layout.base_width) * 100}%`,
+                                  right: "auto",
+                                }}
+                              >
                                 <svg
                                   width="45"
                                   height="57"
@@ -1003,9 +1336,66 @@ export default function App() {
                                 </svg>
                               </div>
                             )}
-                            <div className="schematic-subtitle">
-                              <span />
-                              <span />
+                            {form.characterUsage !== "none" &&
+                              form.characterMode === "duo" && (
+                                <div
+                                  className="schematic-character second"
+                                  style={{
+                                    left: `${(project.layout.regions.character_second[0] / project.layout.base_width) * 100}%`,
+                                    right: "auto",
+                                  }}
+                                  aria-label="2人目のキャラクター"
+                                >
+                                  <svg
+                                    width="45"
+                                    height="57"
+                                    viewBox="0 0 45 57"
+                                    aria-hidden="true"
+                                  >
+                                    <circle
+                                      cx="22"
+                                      cy="14"
+                                      r="12"
+                                      fill="#c0d6ef"
+                                    />
+                                    <path
+                                      d="M3 56V42a19 19 0 0 1 38 0v14"
+                                      fill="#8caac9"
+                                    />
+                                    <circle
+                                      cx="18"
+                                      cy="14"
+                                      r="1.5"
+                                      fill="#3b5244"
+                                    />
+                                    <circle
+                                      cx="27"
+                                      cy="14"
+                                      r="1.5"
+                                      fill="#3b5244"
+                                    />
+                                    <path d="M18 20h9" stroke="#3b5244" />
+                                  </svg>
+                                </div>
+                              )}
+                            <div
+                              className="schematic-subtitle"
+                              style={{
+                                left: `${(project.layout.regions.subtitle[0] / project.layout.base_width) * 100}%`,
+                                width: `${(project.layout.regions.subtitle[2] / project.layout.base_width) * 100}%`,
+                              }}
+                            >
+                              <span
+                                style={{ background: form.subtitleColor }}
+                              />
+                              <span
+                                style={{
+                                  background:
+                                    form.characterMode === "duo"
+                                      ? form.secondCharacter.subtitleColor
+                                      : form.subtitleColor,
+                                }}
+                              />
                             </div>
                           </div>
                           <p className="preview-caption">
@@ -1014,7 +1404,7 @@ export default function App() {
                         </div>
                       )}
                       {preview === "files" && (
-                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${character ? "├─ character.glb" : "└─ (素材は任意)"}\n${bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (10 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
+                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${character ? "├─ character.glb" : "└─ (素材は任意)"}\n${form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (10 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
                       )}
                       {preview === "json" && (
                         <pre className="json-preview">
@@ -1036,12 +1426,8 @@ export default function App() {
                       <div>
                         <dt>出力</dt>
                         <dd>
-                          {form.width === 3840
-                            ? "4K"
-                            : form.width === 1280
-                              ? "HD"
-                              : "Full HD"}{" "}
-                          / {form.fps} fps
+                          {portrait ? "縦9:16" : "横16:9"} · {form.width} ×{" "}
+                          {form.height} / {form.fps} fps
                         </dd>
                       </div>
                       <div>

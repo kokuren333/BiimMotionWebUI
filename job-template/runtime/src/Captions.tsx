@@ -1,20 +1,27 @@
 import { useVideoConfig } from "remotion";
 import project from "../../project.json";
+import { biimEnabled, regionsFor, speakerFor } from "./Presentation";
 export const Captions = ({
   text,
+  speakerId,
+  enabled = biimEnabled(),
   reserveCharacterSpace = true,
 }: {
   text: string;
+  speakerId?: string;
+  enabled?: boolean;
   reserveCharacterSpace?: boolean;
 }) => {
   const { width } = useVideoConfig();
   const font = project.layout.fonts.subtitle;
-  const [x, y, w, h] = project.layout.regions.subtitle;
+  enabled = enabled && biimEnabled();
+  const [x, y, w, h] = regionsFor(enabled).subtitle;
   const unit = width / project.layout.base_width;
-  const keepBiimRegion =
-    project.direction.biim_usage !== "never" || reserveCharacterSpace;
+  const keepBiimRegion = !enabled || reserveCharacterSpace;
+  const speaker = speakerFor(speakerId);
   return (
     <div
+      data-speaker-id={speaker.id}
       style={{
         position: "absolute",
         left: keepBiimRegion
@@ -25,10 +32,16 @@ export const Captions = ({
           ? `${(w / project.layout.base_width) * 100}%`
           : "94%",
         height: `${(h / project.layout.base_height) * 100}%`,
-        padding: `${8 * unit}px ${16 * unit}px`,
-        color: project.layout.colors.subtitle,
+        padding: `${4 * unit}px ${12 * unit}px`,
+        boxSizing: "border-box",
+        color: speaker.subtitle_color,
         fontFamily: font.family,
-        fontSize: font.size * unit,
+        fontSize:
+          (enabled
+            ? font.size
+            : project.video.height > project.video.width
+              ? 54
+              : 52) * unit,
         lineHeight: 1.2,
         fontWeight: font.weight,
         textAlign: "center",
@@ -38,14 +51,14 @@ export const Captions = ({
         placeItems: "center",
       }}
     >
-      {[9, 4, 0].map((stroke, i) => (
+      {[9, 0].map((stroke) => (
         <span
           key={stroke}
-          aria-hidden={i < 2}
+          aria-hidden={stroke > 0}
           style={{
             gridArea: "1 / 1",
             WebkitTextStroke: stroke
-              ? `${stroke * unit}px ${i === 0 ? "#fff" : "#000"}`
+              ? `${stroke * unit}px ${speaker.subtitle_outline}`
               : undefined,
             paintOrder: "stroke fill",
           }}

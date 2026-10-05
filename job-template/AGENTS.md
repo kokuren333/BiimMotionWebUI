@@ -11,6 +11,11 @@
 - overshoot、stagger、mask reveal、camera motionなどを要所に使う。同じ画面状態を長く維持せず、静と動のメリハリを作る。fadeだけを繰り返さない。
 - ナレーションと説明図の変化を同期させる。音声の実測尺からタイミングを決める。
 - 設定したBiim使用率・キャラ頻度・図解方針を尊重する。字幕とキャラクターを重ねない。
+- project.character_modeがduoならproject.charactersの2人を使う。各人のname（表記）・reading（読み仮名）・personality・speaking_style・role・notesに沿って掛け合いを作り、GLBも別々に読み込む。scenes[].dialogueにspeaker_id（character1 / character2）とtextを記録する。plan/narration.jsonで上書きする場合も全発話にspeaker_idを指定する。話者を推測して交互に割り当てない。
+- 字幕は話者のsubtitle_color＋subtitle_outline（白ふち）、音声はvoice.style_id・speedを使う。名前は字幕に表記を残し、音声にだけreadingを適用する。固有名詞などを別読みする場合はspoken_textを指定する。同じStyle IDは同じ声になる。nameは任意、speaker_idで識別する。
+- project.layout.modeがfullscreenまたは動画が縦9:16の場合、全場面でBiim枠・固定ノート欄を使わず、画面全体にアニメーション・モーショングラフィックスを構成する。デザイン原文にBiimへの言及が残っていてもこの指定を優先する。縦動画は縦向けの構図と文字サイズで設計する。
+- Biim設定中の一部場面を全画面にする場合はscenes[].biim=falseを記録し、そのsceneをBiimSceneに渡す。音声のscene_idから字幕位置も追従する。2人目はBiimSceneのsecondCharacterに渡せる。配置は各人のposition（left / right）に従い、project.layout.regionsのcharacter / character_second / subtitleを使う。同梱SVGの字幕枠も配置に合わせて生成済み。既定は左キャラ1・中央字幕・右キャラ2。
+- Character3Dは既定で領域の上端から20%せり出すキャンバスと大きめのモデル表示を使う。字幕には侵入させず、モデルや動作に応じてsizeMultiplier（既定1.2）を調整できる。
 - Biimを使う場面はproject.layoutのbiim-standard-v1を標準にする。枠・本文/ノート/字幕のフォントは同梱素材を使い、PCのフォントに依存しない。本文とノートはNoto Sans JP、字幕はM PLUS Rounded 1c 800。標準枠内で画面を自由に動かし、フルスクリーン場面では枠を外してよい。ユーザーの指定なしにBiim場面ごとの枠座標やフォントをばらばらに変えない。
 
 ## 制作工程
@@ -18,7 +23,7 @@
 2. plan/script.mdを作成。専門用語の読み、対象視聴者の前提、結論を確認する。
 3. plan/storyboard.mdを作成。各場面の説明目的、画面変化、ナレーション、キャラ動作、BGM / SEの狙いとタイミングをまとめる。希望尺は目標であり、変更したら理由を記録する。
 4. scenes/を実装。runtime/src/MainVideo.tsx と scenes/index.ts は自由に編集し、任意のSequenceやシーンを登録する。project.jsonに実際の場面の目録を記録する。
-5. Aivisを使う場合は runtime で npm run voice。plan/narration.jsonのsegmentsが空ならproject.scenes[].scriptを句点・疑問符・感嘆符で分割して音声と字幕を生成する。発話ごとの開始時刻や読み分けを調整したい場合はplan/narration.jsonで上書きできる。style_idは/speakersのstyles[].id。エンジンを勝手にインストールせず、起動先を確認する。音声合成なし設定ならこの工程は省略し、その前提で映像を制作する。
+5. Aivisを使う場合は runtime で npm run voice。plan/narration.jsonのsegmentsが空ならproject.scenes[].dialogue（掛け合い）またはscript（1人解説）から音声と字幕を生成する。各話者のStyle ID・話速と、名前の読み仮名を適用する。発話ごとの開始時刻や読み分けを調整したい場合はplan/narration.jsonで上書きできる。style_idは/speakersのstyles[].id。エンジンを勝手にインストールせず、起動先を確認する。音声合成なし設定ならこの工程は省略し、その前提で映像を制作する。
 6. 発話の実測値でSequenceの尺・字幕・キャラ動作を同期。テンプレートの字幕は発話単位。必要なら短い字幕単位に分割・調整する。GLBアニメーションはフレームからAnimationMixer.setTime()でサンプルし、useFrameや実時間に依存させない。モデルに口のmorph targetがあれば独自に同期し、ない場合は身振りで表現する。
 7. **場面に合う簡単なBGMとSEも制作する。** project.audio.generate_bgm_seがtrueの場合、project.audio.instructionsとstoryboardに従い短いループ・チャイム・スウィッシュ・インパクトなどを作る。添付BGMを優先する。plan/sound-design.jsonを書き、npm run soundで手続き的なWAVを生成できる。必要なら独自のシンセや利用可能な音声生成ツールを使う。falseなら新規生成しない。特定楽曲の模倣を要求せず、音の作り方や出典・利用条件を記録する。
 8. 音量を調整。ナレーションを優先し、BGMは控えめに、効果音は意味のある瞬間に。必要ならダッキング・フェード・ループ継ぎ目を実装。突然の大音量、クリッピング、SEの連打を避ける。

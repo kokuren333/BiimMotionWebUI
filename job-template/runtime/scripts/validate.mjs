@@ -5,13 +5,17 @@ import { spawnSync } from "node:child_process";
 import {
   finite,
   localPath,
+  narrationSpeaker,
+  projectCharacters,
   prepare,
   readJSON,
   root,
   runtime,
   validId,
+  validateCharacters,
   wavDuration,
 } from "./lib.mjs";
+import { sceneSegments } from "./aivis.mjs";
 
 const require = createRequire(import.meta.url);
 const errors = [];
@@ -35,6 +39,19 @@ await check("project.json", async () => {
   if (![24, 25, 30, 60].includes(project.video.fps))
     throw new Error("Unsupported fps");
   finite(project.video.target_duration_sec, 5, 7200, "target_duration_sec");
+  if (
+    project.video.height > project.video.width &&
+    (project.direction.biim_usage !== "never" ||
+      project.layout.frame ||
+      project.layout.mode !== "fullscreen")
+  )
+    throw new Error("Portrait video must use fullscreen without a Biim frame");
+  if (
+    project.layout.mode === "fullscreen" &&
+    (project.direction.biim_usage !== "never" || project.layout.frame)
+  )
+    throw new Error("Fullscreen video must disable Biim");
+  validateCharacters(project);
   if (!["aivis", "none"].includes(project.voice.engine))
     throw new Error("Unsupported voice engine");
   if (project.voice.engine === "aivis") {
@@ -64,7 +81,7 @@ if (project) {
     for (const asset of [
       project.layout.frame,
       ...Object.values(project.layout.fonts).map((font) => font.path),
-      project.character.model,
+      ...projectCharacters(project).map((character) => character.model),
       project.audio.bgm,
     ].filter(Boolean))
       await fs.access(localPath(asset));
@@ -100,6 +117,7 @@ if (project) {
         if (Math.abs(wavDuration(data) - clip.duration_sec) > 0.02)
           throw new Error("Duration does not match WAV: " + clip.id);
         if (name === "narration") {
+          narrationSpeaker(project, clip);
           if (clip.start_sec < voiceEnd - 0.001)
             throw new Error("Overlapping narration: " + clip.id);
           voiceEnd = clip.start_sec + clip.duration_sec;
@@ -129,7 +147,10 @@ if (process.argv.includes("--final")) {
       );
     for (const scene of project.scenes) {
       validId(scene.id);
-      if (!scene.script?.trim()) throw new Error("Scene script missing");
+      if (!scene.script?.trim() && !scene.dialogue?.length)
+        throw new Error("Scene script / dialogue missing");
+      if (scene.biim === true && project.layout.mode === "fullscreen")
+        throw new Error("Biim scene forbidden in fullscreen mode");
       if (
         typeof scene.note_top !== "string" ||
         typeof scene.note_bottom !== "string"
@@ -137,6 +158,8 @@ if (process.argv.includes("--final")) {
         throw new Error("Scene note_top / note_bottom must be strings");
       finite(scene.duration_sec, 0.001, 7200, "scene duration");
     }
+    for (const segment of sceneSegments(project))
+      narrationSpeaker(project, segment);
     for (const file of [
       "plan/script.md",
       "plan/storyboard.md",

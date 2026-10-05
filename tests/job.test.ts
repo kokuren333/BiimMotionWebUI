@@ -5,6 +5,7 @@ import path from "node:path";
 import JSZip from "jszip";
 import {
   createProject,
+  createBrief,
   defaults,
   generateJob,
   safeName,
@@ -268,4 +269,205 @@ test("procedural BGM and SE are deterministic, finite WAVs with bounded peaks", 
     /notes/,
   );
   assert.throws(() => wavDuration(Buffer.from("not wav")), /RIFF/);
+});
+
+test("solo and duo profiles preserve names, roles, custom colors and independent voices", () => {
+  const solo = createProject({ ...form, subtitleColor: "#12ab34" }, empty);
+  assert.equal(solo.characters.length, 1);
+  assert.equal(solo.characters[0].subtitle_color, "#12ab34");
+  assert.equal(solo.characters[0].subtitle_outline, "#ffffff");
+  const duoForm = {
+    ...form,
+    characterMode: "duo" as const,
+    characterName: "茜",
+    characterReading: "あかね",
+    secondCharacter: {
+      ...form.secondCharacter,
+      name: "葵",
+      reading: "あおい",
+      role: "質問役",
+      styleId: 42,
+      voiceSpeed: 1.25,
+    },
+  };
+  const duo = createProject(duoForm, empty);
+  assert.deepEqual(
+    duo.characters.map((c) => [c.id, c.name, c.reading, c.subtitle_color]),
+    [
+      ["character1", "茜", "あかね", "#ff0000"],
+      ["character2", "葵", "あおい", "#0000ff"],
+    ],
+  );
+  assert.equal(duo.characters[1].voice.style_id, 42);
+  assert.equal(duo.characters[1].voice.speed, 1.25);
+  const brief = createBrief(duoForm, empty);
+  assert.match(brief, /2人の掛け合い/);
+  assert.match(brief, /葵.*あおい/);
+  assert.match(brief, /質問役/);
+  assert.ok(
+    validateForm({
+      ...duoForm,
+      secondCharacter: { ...duoForm.secondCharacter, subtitleColor: "red" },
+    }).length,
+  );
+  assert.ok(
+    validateForm({
+      ...duoForm,
+      secondCharacter: { ...duoForm.secondCharacter, styleId: -1 },
+    }).length,
+  );
+  assert.ok(
+    validateForm({
+      ...duoForm,
+      secondCharacter: { ...duoForm.secondCharacter, voiceSpeed: NaN },
+    }).length,
+  );
+  assert.equal(
+    validateForm({
+      ...form,
+      secondCharacter: { ...form.secondCharacter, styleId: -1 },
+    }).length,
+    0,
+  );
+});
+
+test("fullscreen and portrait enforce no Biim frame and keep both characters outside captions", () => {
+  for (const dimensions of [
+    [1920, 1080],
+    [1280, 720],
+    [3840, 2160],
+    [1080, 1920],
+    [720, 1280],
+    [2160, 3840],
+  ]) {
+    const [width, height] = dimensions;
+    const current = {
+      ...form,
+      width,
+      height,
+      fullScreen: width > height,
+      characterMode: "duo" as const,
+      biimUsage: "mostly" as const,
+    };
+    const project = createProject(current, empty);
+    assert.equal(project.layout.mode, "fullscreen");
+    assert.equal(project.layout.frame, null);
+    assert.equal(project.direction.biim_usage, "never");
+    assert.deepEqual(project.layout.regions.main, [
+      0,
+      0,
+      project.layout.base_width,
+      project.layout.base_height,
+    ]);
+    for (const name of ["character", "character_second", "subtitle"] as const) {
+      const [x, y, w, h] = project.layout.regions[name];
+      assert.ok(
+        x >= 0 &&
+          y >= 0 &&
+          x + w <= project.layout.base_width &&
+          y + h <= project.layout.base_height,
+      );
+    }
+    const [cx, cy, cw, ch] = project.layout.regions.character;
+    const [sx, sy, sw, sh] = project.layout.regions.subtitle;
+    assert.ok(cx + cw <= sx || sx + sw <= cx || cy + ch <= sy || sy + sh <= cy);
+    const [, secondY, , secondH] = project.layout.regions.character_second;
+    assert.ok(secondY + secondH <= sy);
+    assert.match(createBrief(current, empty), /Biim枠・固定ノート欄を使わず/);
+  }
+  assert.equal(
+    createProject({ ...form, biimUsage: "never" }, empty).layout.mode,
+    "fullscreen",
+  );
+});
+
+test("Biim subtitles and their SVG border move with character positions", async () => {
+  const templates = await loadTemplates();
+  for (const [first, second] of [
+    ["left", "right"],
+    ["right", "left"],
+    ["left", "left"],
+    ["right", "right"],
+  ] as const) {
+    const current = {
+      ...form,
+      characterMode: "duo" as const,
+      characterPosition: first,
+      secondCharacter: { ...form.secondCharacter, position: second },
+    };
+    const project = createProject(current, empty);
+    const [x, y, width, height] = project.layout.regions.subtitle;
+    for (const key of ["character", "character_second"] as const) {
+      const [cx, cy, cw, ch] = project.layout.regions[key];
+      assert.ok(
+        cx + cw <= x || x + width <= cx || cy + ch <= y || y + height <= cy,
+      );
+    }
+    if (first !== second) assert.equal(x + width / 2, 960);
+    const [fx, fy, fw, fh] = project.layout.subtitle_frame;
+    assert.ok(
+      fx <= x && fx + fw >= x + width && fy <= y && fy + fh >= y + height,
+    );
+    const zip = await JSZip.loadAsync(
+      (await generateJob(current, empty, templates)).data,
+    );
+    assert.ok(
+      (
+        await zip.file(form.title + "/assets/biim-frame.svg")!.async("string")
+      ).includes(`x="${fx}" y="${fy}" width="${fw}" height="${fh}"`),
+    );
+  }
+  const noCharacters = createProject(
+    { ...form, characterMode: "duo", characterUsage: "none" },
+    empty,
+  );
+  assert.ok(noCharacters.layout.regions.subtitle[2] > 1800);
+});
+
+test("duo ZIP packages two separate GLBs; solo omits the inactive second model and its limits", async () => {
+  const model = {
+    name: "same.glb",
+    data: new Uint8Array([1, 2]),
+    size: 2,
+    type: "",
+  };
+  const second = { ...model, data: new Uint8Array([3, 4]) };
+  const assets = { sources: [], character: model, secondCharacter: second };
+  const templates = await loadTemplates();
+  const duo = await generateJob(
+    { ...form, characterMode: "duo", width: 1080, height: 1920 },
+    assets,
+    templates,
+  );
+  const zip = await JSZip.loadAsync(duo.data);
+  const prefix = form.title + "/";
+  assert.deepEqual(
+    await zip.file(prefix + "assets/character.glb")!.async("uint8array"),
+    model.data,
+  );
+  assert.deepEqual(
+    await zip.file(prefix + "assets/character2.glb")!.async("uint8array"),
+    second.data,
+  );
+  const project = JSON.parse(
+    await zip.file(prefix + "project.json")!.async("string"),
+  );
+  assert.equal(project.characters[1].model, "assets/character2.glb");
+  assert.equal(project.layout.frame, null);
+  const brief = await zip.file(prefix + "brief.md")!.async("string");
+  assert.match(brief, /speaker_id/);
+  assert.match(brief, /全画面の演出/);
+  const solo = await generateJob(form, assets, templates);
+  assert.equal(
+    (await JSZip.loadAsync(solo.data)).file(prefix + "assets/character2.glb"),
+    null,
+  );
+  const invalid = {
+    ...assets,
+    secondCharacter: { ...second, name: "bad.gltf", size: 501 * 1024 * 1024 },
+  };
+  assert.equal(validateForm(form, invalid).length, 0);
+  assert.ok(
+    validateForm({ ...form, characterMode: "duo" }, invalid).length >= 2,
+  );
 });

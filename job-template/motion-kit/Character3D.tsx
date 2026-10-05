@@ -21,6 +21,7 @@ const Model = ({ path, animation }: { path: string; animation?: string }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const advance = useThree((state) => state.advance);
+  const canvasSize = useThree((state) => state.size);
   useEffect(() => {
     let live = true;
     new GLTFLoader().load(
@@ -44,14 +45,23 @@ const Model = ({ path, animation }: { path: string; animation?: string }) => {
     const bounds = new Box3().setFromObject(gltf.scene);
     const size = bounds.getSize(new Vector3());
     const center = bounds.getCenter(new Vector3());
-    const scale = 2.5 / Math.max(size.x, size.y, size.z, 0.001);
+    // Fit both axes to the actual canvas instead of leaving most of the slot empty.
+    const viewHeight = 2 * 5 * Math.tan((35 * Math.PI) / 360);
+    const viewWidth = (viewHeight * canvasSize.width) / canvasSize.height;
+    const scale = Math.min(
+      (viewHeight * 0.82) /
+        Math.max(size.y + (viewHeight * 0.82 * size.z) / 10, 0.001),
+      (viewWidth * 0.82) /
+        Math.max(size.x + (viewWidth * 0.82 * size.z) / 10, 0.001),
+      3 / Math.max(size.z, 0.001),
+    );
     const mixer = new AnimationMixer(gltf.scene);
     const clip = animation
       ? gltf.animations.find((clip) => clip.name === animation)
       : gltf.animations[0];
     if (clip) mixer.clipAction(clip).play();
     return { scene: gltf.scene, scale, center, mixer };
-  }, [gltf, animation]);
+  }, [gltf, animation, canvasSize.width, canvasSize.height]);
   useLayoutEffect(() => {
     if (model) {
       model.mixer.setTime(frame / fps);
@@ -78,6 +88,7 @@ const Placeholder = () => {
   const { fps } = useVideoConfig();
   return (
     <group
+      scale={1.4}
       rotation={[0, Math.sin((frame / fps) * 1.8) * 0.18, 0]}
       position={[0, Math.sin((frame / fps) * 3) * 0.04, 0]}
     >
@@ -104,17 +115,24 @@ export const Character3D = ({
   animation,
   width = 360,
   height = 360,
+  sizeMultiplier = 1.2,
 }: {
   model?: string | null;
   animation?: string;
   width?: number;
   height?: number;
+  sizeMultiplier?: number;
 }) => (
   <ThreeCanvas
     width={width}
-    height={height}
-    style={{ width: "100%", height: "100%" }}
-    camera={{ position: [0, 0, 6], fov: 40 }}
+    height={Math.round(height * sizeMultiplier)}
+    style={{
+      position: "absolute",
+      bottom: 0,
+      width: "100%",
+      height: `${sizeMultiplier * 100}%`,
+    }}
+    camera={{ position: [0, 0, 5], fov: 35 }}
   >
     <ambientLight intensity={1.5} />
     <directionalLight position={[3, 5, 5]} intensity={2} />

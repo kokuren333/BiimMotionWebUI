@@ -1686,3 +1686,108 @@ dialog a {
 .full-screen .schematic-subtitle {
   background: #344c3c;
 }
+
+.character-card {
+  min-width: 0;
+  margin: 22px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafcf6;
+}
+.character-card legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.subtitle-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+.subtitle-settings label {
+  margin: 0;
+}
+.subtitle-settings input[type="color"] {
+  width: 64px;
+  height: 36px;
+  padding: 3px;
+  cursor: pointer;
+}
+.subtitle-sample {
+  padding: 10px 14px;
+  background: #354435;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 18px;
+  -webkit-text-stroke: 3px white;
+  paint-order: stroke fill;
+}
+.subtitle-settings small {
+  font-size: 10px;
+}
+.subtitle-settings .color-hex {
+  width: 90px;
+  font-family: monospace;
+}
+.layout-switch {
+  padding: 14px;
+  background: #f3f6eb;
+  border-radius: 6px;
+}
+.video-schematic.portrait {
+  aspect-ratio: 9 / 16;
+  width: 60%;
+  margin: auto;
+  min-height: 0;
+}
+.full-screen {
+  display: block;
+}
+.full-screen .schematic-main {
+  position: absolute;
+  inset: 0;
+}
+.full-screen .schematic-subtitle {
+  position: absolute;
+  bottom: 4%;
+  left: 5%;
+  width: 90%;
+  height: 9%;
+  padding: 0;
+  background: transparent;
+}
+.full-screen .schematic-character {
+  bottom: 16%;
+}
+.schematic-character.second {
+  left: auto;
+  right: 8px;
+  transform-origin: bottom right;
+}
+.schematic-subtitle {
+  position: absolute;
+  bottom: 1%;
+  height: 20%;
+  padding: 0 4%;
+  box-sizing: border-box;
+}
+.full-screen .schematic-subtitle {
+  bottom: 2%;
+  height: 9%;
+  padding: 0;
+}
+.portrait .schematic-character {
+  transform: scale(0.62);
+}
+.schematic-subtitle span {
+  outline: 1px solid white;
+  opacity: 1;
+}
+@media (max-width: 650px) {
+  .character-card .row {
+    grid-template-columns: 1fr;
+  }
+}

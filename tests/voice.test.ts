@@ -31,6 +31,7 @@ test("Aivis pipeline reads scene scripts, splits captions, measures WAVs and rej
     endpoint: string;
     speaker: string | null;
     speed?: number;
+    text?: string | null;
   }[] = [];
   const server = createServer(async (request, response) => {
     const url = new URL(request.url!, "http://localhost");
@@ -39,6 +40,7 @@ test("Aivis pipeline reads scene scripts, splits captions, measures WAVs and rej
     requests.push({
       endpoint: url.pathname,
       speaker: url.searchParams.get("speaker"),
+      text: url.searchParams.get("text"),
       ...(body ? { speed: JSON.parse(body).speedScale } : {}),
     });
     if (url.pathname === "/audio_query") {
@@ -133,11 +135,95 @@ test("Aivis pipeline reads scene scripts, splits captions, measures WAVs and rej
       ),
       false,
     );
-    withAssets.voice.engine = "none";
+    const duo = {
+      ...withAssets,
+      character_mode: "duo",
+      characters: [
+        {
+          id: "character1",
+          name: "茜",
+          reading: "あかね",
+          model: null,
+          voice: { style_id: 11, speed: 0.9 },
+          subtitle_color: "#ff0000",
+          subtitle_outline: "#ffffff",
+        },
+        {
+          id: "character2",
+          name: "葵",
+          reading: "あおい",
+          model: "assets/character2.glb",
+          voice: { style_id: 22, speed: 1.2 },
+          subtitle_color: "#0000ff",
+          subtitle_outline: "#ffffff",
+        },
+      ],
+      scenes: [
+        {
+          id: "scene001",
+          dialogue: [
+            { speaker_id: "character1", text: "葵さん、説明します。" },
+            {
+              speaker_id: "character2",
+              text: "茜さん、お願いします！",
+              spoken_text: "あかねさん、おねがいします。",
+            },
+          ],
+        },
+      ],
+    };
     await fs.writeFile(
-      path.join(temp, "project.json"),
-      JSON.stringify(withAssets),
+      path.join(temp, "assets/character2.glb"),
+      new Uint8Array([1, 2, 3]),
     );
+    await fs.writeFile(path.join(temp, "project.json"), JSON.stringify(duo));
+    await fs.writeFile(
+      path.join(temp, "plan/narration.json"),
+      JSON.stringify({ segments: [] }),
+    );
+    const requestStart = requests.length;
+    const duoResult = await run(script);
+    assert.equal(duoResult.code, 0, duoResult.output);
+    assert.deepEqual(
+      requests.slice(requestStart).map((request) => request.speaker),
+      ["11", "11", "22", "22"],
+    );
+    assert.equal(requests[requestStart].text, "あおいさん、説明します。");
+    assert.equal(requests[requestStart + 1].speed, 0.9);
+    assert.equal(
+      requests[requestStart + 2].text,
+      "あかねさん、おねがいします。",
+    );
+    assert.equal(requests[requestStart + 3].speed, 1.2);
+    const duoManifest = await fs.readFile(manifestPath, "utf8");
+    const duoClips = JSON.parse(duoManifest).clips;
+    assert.deepEqual(
+      duoClips.map((clip: { speaker_id: string }) => clip.speaker_id),
+      ["character1", "character2"],
+    );
+    assert.equal(duoClips[0].text, "葵さん、説明します。");
+    assert.equal(duoClips[1].text, "茜さん、お願いします！");
+    assert.equal(duoClips[1].start_sec, 0.1);
+    assert.deepEqual(
+      await fs.readFile(
+        path.join(temp, "runtime/public/assets/character2.glb"),
+      ),
+      Buffer.from([1, 2, 3]),
+    );
+    for (const speaker_id of [undefined, "unknown"]) {
+      await fs.writeFile(
+        path.join(temp, "plan/narration.json"),
+        JSON.stringify({ segments: [{ id: "bad", text: "test", speaker_id }] }),
+      );
+      const before = requests.length;
+      const invalid = await run(script);
+      assert.equal(invalid.code, 1);
+      assert.match(invalid.output, /speaker_id/);
+      assert.equal(requests.length, before);
+      assert.equal(await fs.readFile(manifestPath, "utf8"), duoManifest);
+    }
+    duo.voice.engine = "none";
+    await fs.writeFile(path.join(temp, "project.json"), JSON.stringify(duo));
     const before = requests.length;
     assert.equal((await run(script)).code, 0);
     assert.equal(requests.length, before);
