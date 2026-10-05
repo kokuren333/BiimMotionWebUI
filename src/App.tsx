@@ -739,7 +739,7 @@ export default function App() {
                           />
                         </label>
                         <label>
-                          キャラの配置
+                          キャラの初期配置
                           <select
                             aria-label={`${label}の配置`}
                             value={profile.position}
@@ -755,7 +755,7 @@ export default function App() {
                             <option value="right">右</option>
                           </select>
                           <small>
-                            Biim枠の字幕位置と幅は、キャラの配置に合わせて自動調整します。
+                            字幕はこの配置に合わせた位置に固定します。1人・2人とも、普段は基本位置を保ち、必要な場面では枠を越えて自由に移動・拡縮できます。
                           </small>
                         </label>
                         <label>

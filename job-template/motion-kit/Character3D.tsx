@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import {
@@ -116,12 +122,24 @@ export const Character3D = ({
   width = 360,
   height = 360,
   sizeMultiplier = 1.2,
+  translateX = 0,
+  translateY = 0,
+  scale = 1,
+  rotation = 0,
+  style,
 }: {
   model?: string | null;
   animation?: string;
   width?: number;
   height?: number;
   sizeMultiplier?: number;
+  /** Screen-space pixels; move the canvas so the model isn't clipped by its viewport. */
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  /** Screen-space rotation in degrees. */
+  rotation?: number;
+  style?: CSSProperties;
 }) => (
   <ThreeCanvas
     width={width}
@@ -131,6 +149,9 @@ export const Character3D = ({
       bottom: 0,
       width: "100%",
       height: `${sizeMultiplier * 100}%`,
+      transformOrigin: "center bottom",
+      transform: `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scale})`,
+      ...style,
     }}
     camera={{ position: [0, 0, 5], fov: 35 }}
   >

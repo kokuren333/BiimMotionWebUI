@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useVideoConfig } from "remotion";
 import project from "../../project.json";
 import { biimEnabled, regionsFor, speakerFor } from "./Presentation";
@@ -6,11 +7,13 @@ export const Captions = ({
   speakerId,
   enabled = biimEnabled(),
   reserveCharacterSpace = true,
+  style,
 }: {
   text: string;
   speakerId?: string;
   enabled?: boolean;
   reserveCharacterSpace?: boolean;
+  style?: CSSProperties;
 }) => {
   const { width } = useVideoConfig();
   const font = project.layout.fonts.subtitle;
@@ -49,6 +52,8 @@ export const Captions = ({
         whiteSpace: "pre-line",
         display: "grid",
         placeItems: "center",
+        zIndex: 10,
+        ...style,
       }}
     >
       {[9, 0].map((stroke) => (

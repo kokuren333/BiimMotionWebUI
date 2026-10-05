@@ -1,5 +1,15 @@
 # Verification — 2026-10-06
 
+## Free character motion in solo and duo modes (2026-10-06)
+
+- Follow-up clarified the default staging policy: captions stay at the layout's fixed position, characters usually stay at their basic positions, and independent movement/scale/rotation beyond the slots is available for specific scene actions. The brief, UI help text and production instructions now agree on this policy; the character motion APIs remain available.
+- `npm test`: all 11 tests passed, including generated brief instructions allowing screen-wide, independent character movement in both modes. `npm run build -- --base=/BiimMotionWebUI/` and `git diff --check` passed.
+- Generated and extracted solo and duo ZIPs. Both runtime configurations passed validation, including TypeScript and asset/audio manifests.
+- Rendered and visually inspected frames 0 and 90 at 640×360 using self-authored animated GLBs and synthetic silent narration. Captures are `.verification/{solo,duo}-motion-{start,moved}.png`.
+- In both modes, Character3D canvas translation, enlargement and rotation moved the model beyond its initial slot into the main image. Duo models used different positions, scale factors and rotations. BiimScene characterStyle / secondCharacterStyle also affected their independent motion. The original slot boundary did not clip the transformed canvases.
+- Captions style overrides moved the captions with the scene frame; blue/white character-1 and red/white character-2 captions rendered correctly. Captions default to a higher z-index than the characters.
+- These checks verify screen-space staging and deterministic frame sampling with simple GLBs. They do not validate production rigs or lip sync. Existing downloaded jobs must be regenerated or updated to receive the new helper APIs and production instructions.
+
 ## Character modes and output layouts (2026-10-06)
 
 - `npm test`: all 11 tests passed. New coverage verifies solo/duo settings, separate model bytes, inactive second-model exclusion, names/readings, custom subtitle colors, per-character voice settings, portrait/fullscreen enforcement, character/subtitle bounds, and the generated Biim subtitle-frame SVG for all left/right placements.

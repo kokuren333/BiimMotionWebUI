@@ -472,6 +472,7 @@ export function createBrief(form: MotionForm, assets: JobAssets): string {
   const project = createProject(form, assets);
   const characterBrief = [
     `モード: ${form.characterMode === "duo" ? "2人の掛け合い。互いの役割・性格・口調に沿って会話を組み立てる。" : "1人で解説。"}`,
+    "1人・2人のどちらでも、キャラ領域は初期配置・待機位置の目安であり、移動範囲やサイズの上限ではない。各キャラクターは通常は基本位置を保ち、説明・強調・リアクションなど必要な場面で独立して画面全体へ移動・拡大縮小・回転できる。Biim枠や他の領域をまたぐ演出も許可し、演出後は基本位置に戻すことを基本とする。字幕位置はレイアウトごとの既定位置に固定し、キャラの動きには追従させない。キャラ側の位置や重なり順で字幕の読みやすさを保つ。Character3DのtranslateX / translateY / scale / rotation、BiimSceneのcharacterStyle / secondCharacterStyleをフレームに同期して変更できる。",
     ...project.characters.map((character, i) =>
       [
         `### ${i + 1}人目 (${character.id})`,
@@ -479,7 +480,7 @@ export function createBrief(form: MotionForm, assets: JobAssets): string {
         `役割: ${character.role}`,
         `性格: ${character.personality}`,
         `口調: ${character.speaking_style}`,
-        `配置: ${character.position === "left" ? "左" : "右"}。字幕枠はキャラ配置に合わせて位置と幅を調整する。`,
+        `初期配置: ${character.position === "left" ? "左" : "右"}。待機時の字幕枠はこの配置に合わせる。演出中の位置・サイズは自由に変更できる。`,
         `表情・動き: ${character.notes}`,
         `モデル: ${character.model ?? "未添付。必要な素材や代替案を記録する。"}`,
         `字幕: ${character.subtitle_color} + 白ふち (${character.subtitle_outline})`,
@@ -535,7 +536,7 @@ export async function generateJob(
   root.file(
     "brief.md",
     createBrief(form, assets) +
-      `${usesFullScreen(form) ? "\n## 全画面の演出\nBiim枠や固定ノート欄は使わない。縦画面は縦向けに構図・文字・キャラの位置を設計する。BiimScene / BiimOverlayも枠なしで画面全体を使用する。\n" : ""}\n## 場面テキストと字幕\nBiimを使う設定の場面ではproject.layoutの標準座標、同梱SVG、同梱フォントを使用する。全画面・縦画面ではBiim枠を使わない。場面ごとにnote_top（右上）、note_bottom（右下）、script（読み上げ・字幕）をOpusが記入する。BiimSceneコンポーネントがノートを枠に配置し、npm run voiceはscriptから音声と字幕を生成できる。映像は自由なReact/Remotionシーンとして実装する。掛け合いはscenes[].dialogueにspeaker_id (character1 / character2) とtextを記入するか、plan/narration.jsonのsegmentsで指定する。音声と字幕は話者ごとの設定を使用し、字幕の名前は表記、音声は読み仮名を使う。音声だけ別の読みを指定する場合はspoken_textを記入する。\n\n## 場面に合わせたBGM・SE制作\n簡単なBGM / SEの作成: ${form.generateAudio ? "許可・希望する" : "行わない（添付音源のみ使用可）"}\n${form.audioNotes}\n添付BGMがある場合はそれを優先。生成を希望する場合はruntime/scripts/sound-design.mjsを使うか、必要に応じて独自実装する。音の出現はstoryboardの説明意図に合わせ、会話を邪魔しない音量でミックスする。音源の作り方・出典・利用条件を記録し、previewを音声付きで確認する。\n`,
+      `${usesFullScreen(form) ? "\n## 全画面の演出\nBiim枠や固定ノート欄は使わない。縦画面は縦向けに構図・文字・キャラの位置を設計する。BiimScene / BiimOverlayも枠なしで画面全体を使用する。\n" : ""}\n## 場面テキストと字幕\nBiimを使う設定の場面ではproject.layoutの枠・ノートの標準座標、同梱SVG、同梱フォントを使用する。字幕位置はレイアウトごとの既定位置に固定する。キャラは基本位置を保ちつつ、必要な場面で位置・サイズを自由に変更できる。全画面・縦画面ではBiim枠を使わない。場面ごとにnote_top（右上）、note_bottom（右下）、script（読み上げ・字幕）をOpusが記入する。BiimSceneコンポーネントがノートを枠に配置し、npm run voiceはscriptから音声と字幕を生成できる。映像は自由なReact/Remotionシーンとして実装する。掛け合いはscenes[].dialogueにspeaker_id (character1 / character2) とtextを記入するか、plan/narration.jsonのsegmentsで指定する。音声と字幕は話者ごとの設定を使用し、字幕の名前は表記、音声は読み仮名を使う。音声だけ別の読みを指定する場合はspoken_textを記入する。\n\n## 場面に合わせたBGM・SE制作\n簡単なBGM / SEの作成: ${form.generateAudio ? "許可・希望する" : "行わない（添付音源のみ使用可）"}\n${form.audioNotes}\n添付BGMがある場合はそれを優先。生成を希望する場合はruntime/scripts/sound-design.mjsを使うか、必要に応じて独自実装する。音の出現はstoryboardの説明意図に合わせ、会話を邪魔しない音量でミックスする。音源の作り方・出典・利用条件を記録し、previewを音声付きで確認する。\n`,
   );
   const names = uniqueNames(assets.sources);
   // Normalize Blobs to bytes for both browsers and Node-based verification.

@@ -289,6 +289,13 @@ test("solo and duo profiles preserve names, roles, custom colors and independent
   assert.equal(solo.characters.length, 1);
   assert.equal(solo.characters[0].subtitle_color, "#12ab34");
   assert.equal(solo.characters[0].subtitle_outline, "#ffffff");
+  assert.match(
+    createBrief(form, empty),
+    /キャラ領域は初期配置・待機位置の目安/,
+  );
+  assert.match(createBrief(form, empty), /画面全体へ移動・拡大縮小・回転/);
+  assert.match(createBrief(form, empty), /通常は基本位置を保ち/);
+  assert.match(createBrief(form, empty), /字幕位置はレイアウトごとの既定位置に固定/);
   const duoForm = {
     ...form,
     characterMode: "duo" as const,
@@ -317,6 +324,10 @@ test("solo and duo profiles preserve names, roles, custom colors and independent
   assert.match(brief, /2人の掛け合い/);
   assert.match(brief, /葵.*あおい/);
   assert.match(brief, /質問役/);
+  assert.match(brief, /必要な場面で独立して/);
+  assert.match(brief, /Biim枠や他の領域をまたぐ/);
+  assert.match(brief, /通常は基本位置を保ち/);
+  assert.match(brief, /キャラの動きには追従させない/);
   assert.ok(
     validateForm({
       ...duoForm,

@@ -9,6 +9,8 @@ export const BiimOverlay = ({
   noteBottom,
   character,
   secondCharacter,
+  characterStyle,
+  secondCharacterStyle,
   enabled = true,
 }: {
   children: ReactNode;
@@ -16,6 +18,8 @@ export const BiimOverlay = ({
   noteBottom?: ReactNode;
   character?: ReactNode;
   secondCharacter?: ReactNode;
+  characterStyle?: CSSProperties;
+  secondCharacterStyle?: CSSProperties;
   enabled?: boolean;
 }) => {
   const { width } = useVideoConfig();
@@ -45,6 +49,7 @@ export const BiimOverlay = ({
         containerType: "inline-size",
         background: layout.colors.background,
         fontFamily: layout.fonts.body.family,
+        overflow: "visible",
       }}
     >
       <div
@@ -73,14 +78,28 @@ export const BiimOverlay = ({
         </>
       )}
       {project.direction.character_usage !== "none" && character && (
-        <div style={{ ...region(regions.character), zIndex: 2 }}>
+        <div
+          style={{
+            ...region(regions.character),
+            overflow: "visible",
+            zIndex: 2,
+            ...characterStyle,
+          }}
+        >
           {character}
         </div>
       )}
       {project.direction.character_usage !== "none" &&
         project.character_mode === "duo" &&
         secondCharacter && (
-          <div style={{ ...region(regions.character_second), zIndex: 2 }}>
+          <div
+            style={{
+              ...region(regions.character_second),
+              overflow: "visible",
+              zIndex: 2,
+              ...secondCharacterStyle,
+            }}
+          >
             {secondCharacter}
           </div>
         )}

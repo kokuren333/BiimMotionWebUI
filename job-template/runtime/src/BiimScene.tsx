@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BiimOverlay } from "../../motion-kit/BiimOverlay";
 import { biimEnabled } from "./Presentation";
 
@@ -18,12 +18,16 @@ export const BiimScene = ({
   children,
   character,
   secondCharacter,
+  characterStyle,
+  secondCharacterStyle,
   enabled = biimEnabled(scene),
 }: {
   scene: BiimSceneData;
   children: ReactNode;
   character?: ReactNode;
   secondCharacter?: ReactNode;
+  characterStyle?: CSSProperties;
+  secondCharacterStyle?: CSSProperties;
   enabled?: boolean;
 }) => (
   <BiimOverlay
@@ -32,6 +36,8 @@ export const BiimScene = ({
     noteBottom={scene.note_bottom}
     character={character}
     secondCharacter={secondCharacter}
+    characterStyle={characterStyle}
+    secondCharacterStyle={secondCharacterStyle}
   >
     {children}
   </BiimOverlay>
