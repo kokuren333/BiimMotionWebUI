@@ -23,7 +23,17 @@ npm run validate -- --final # 成果物・シーン目録・QA記録の検査
 `npm install`でジョブルートにpackage-lock.jsonが作られたら、以降はそのルートで`npm ci`を実行して環境を再現できます。Aivisを使う場合は、project.jsonで指定したエンジンURLとStyle IDを制作するPCで利用できるようにします。「音声合成なし」のジョブでは音声合成工程を省略します。
 最初の映像は6秒の動作確認用です。希望尺に水増ししていません。scenes/index.tsxと各Sceneを編集し、実際の音声尺に合わせてSequenceを組み直してください。project.jsonのscenesは未記入です。自動検査だけでは目視・聴取確認を代替できません。WebUI更新後の設定・ヘルパーを既存ジョブに反映する場合は、ZIPを再生成するか該当ファイルを更新します。
 
-## BiimSlideMaker互換の場面テキスト
+## MV制作（project.mode="mv"）
+
+MVでは`audio.music`の完成音源、`direction.music_mood`の曲の雰囲気、`direction.music_lyrics` / `plan/lyrics.txt`の歌詞入力、brief.md、sourcesの歌詞・画像・資料・データを基に、曲に合うモーショングラフィックスを画面全体へ構成します。Biim枠・固定ノート欄・解説字幕・キャラの自動配置は使用しません。Aivisと追加BGM・SE生成も無効です。`npm run voice`と`npm run sound`の制作工程は省略します。
+
+完成音源は0秒から最後まで音量1・ループなしで再生します。Rootが実ファイルの尺を取得し、動画の尺をその長さに合わせます。希望尺より音源の実測尺を優先し、勝手なカットや音源置換は行いません。MainVideoに再生処理があるため、Scene内へ音声を重複追加しないでください。
+
+`plan/music-analysis.md`に曲の展開・ビート・フレーズ・感情・演出方針を記録し、`plan/storyboard.md`に時刻ごとの映像構成を記録します。project.scenesには場面のid・duration_sec・summaryを記録し、scenes/index.tsxを実際のMV構成に変更します。MVではscript・dialogue・note_top・note_bottomは必須ではありません。歌詞は提供された内容だけを使用し、表示する場合は楽曲の時刻に合わせて独自に実装します。
+
+WebUIでは01〜03で入力し、04・05・演出と調査の詳細は非表示です。追加Web調査は無効で、提供資料と参考URLを利用します。完成後は通常動画と同じくvalidate・preview・映像音響QA・build・validate --finalを実行します。最終検査の台本記録はMVではplan/music-analysis.mdになります。
+
+## 解説動画のBiimSlideMaker互換の場面テキスト
 
 project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕と読み上げの役割をそのまま維持します。
 

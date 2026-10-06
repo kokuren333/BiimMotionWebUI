@@ -3,6 +3,7 @@ import project from "../../project.json";
 import { MainVideo } from "./MainVideo";
 import { videoDurationInFrames } from "../../scenes";
 import { Fonts } from "./Fonts";
+import { getMusicDuration, musicVideo } from "./Music";
 
 export const Root = () => (
   <Fonts>
@@ -13,6 +14,16 @@ export const Root = () => (
       height={project.video.height}
       fps={project.video.fps}
       durationInFrames={videoDurationInFrames}
+      calculateMetadata={
+        musicVideo
+          ? async () => ({
+              durationInFrames: Math.max(
+                1,
+                Math.ceil((await getMusicDuration()) * project.video.fps),
+              ),
+            })
+          : undefined
+      }
     />
   </Fonts>
 );

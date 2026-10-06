@@ -3,6 +3,17 @@
 あなたはこのプロジェクトの映像ディレクター兼実装者です。brief.md と project.json と sources/ を読み、高密度で視覚的に楽しい解説動画を制作してください。ユーザーの動画全体への指示を制作の各段階で優先します。
 
 ## 自由度
+
+### MVモード（project.mode="mv"）
+
+- このモードでは以下の解説動画向け指示よりMV方針を優先する。完成音源project.audio.music、曲の雰囲気project.direction.music_mood、brief.md、sourcesを基に、曲に合ったモーショングラフィックスのMVを制作する。
+- 全場面でBiim枠・固定ノート欄・解説字幕を使わず、画面全体を構成する。タイポグラフィ、図形、色彩、パーティクル、カメラの動きをビート・フレーズ・曲の展開へ同期させる。歌詞入力はproject.direction.music_lyrics / plan/lyrics.txtに原文を保存している。アップロードされた画像・歌詞・データも素材に使い、歌詞は提供された内容だけを表示する。
+- 完成音源を制作PCでも実測し、希望尺よりその尺を優先する。0秒から最後まで通常音量で一度だけ再生し、勝手にループ・切り詰め・音声合成・追加BGM/SE・音源置換をしない。MainVideoが完成音源を再生し、Rootが実ファイルの尺を取得する。Aivis設定は使用しない。
+- plan/music-analysis.mdに楽曲の展開・ビート・盛り上がり・演出方針を記録し、plan/storyboard.mdに時刻ごとの映像構成を記録する。制作工程の解説台本・Aivis・新規BGM/SE工程は省略し、音源と映像の同期・素材記録・映像音響QA・最終レンダリングを行う。
+- project.scenesに実際の場面のid・duration_sec・summaryを記録する。script・dialogue・note_top・note_bottomは必須ではない。キャラの自動配置と掛け合いは使用しない。追加Web調査は行わず、完成音源・歌詞入力・提供資料・参考URLを基に制作する。
+
+### 解説動画と共通の演出
+
 - 静的スライドを並べるだけにしない。動きそのものが説明になるようにする。
 - Remotion / React / SVG / CSS / Canvas / Three.jsを自由に使う。motion-kitは便利なら使い、必要なら独自実装してよい。
 - scenes/Scene001.tsx は動作確認用。完成動画では内容に合うシーンに作り替える。シーン数、構成、コンポーネント設計は任せる。固定Biim画面やslides[]のDSLは要求しない。

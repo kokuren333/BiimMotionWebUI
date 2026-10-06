@@ -12,6 +12,7 @@ import sound from "../data/sound-design.json";
 import { SceneTimeline } from "../../scenes";
 import { Captions } from "./Captions";
 import { sceneUsesBiim } from "./Presentation";
+import { musicVideo } from "./Music";
 
 type Clip = {
   id: string;
@@ -39,7 +40,11 @@ export const MainVideo = () => {
       }}
     >
       <SceneTimeline />
-      {project.voice.engine !== "none" &&
+      {musicVideo && project.audio.music && (
+        <Audio src={staticFile(project.audio.music)} volume={1} />
+      )}
+      {!musicVideo &&
+        project.voice.engine !== "none" &&
         voiceClips.map((clip) => (
           <Sequence
             key={clip.id}
@@ -57,33 +62,40 @@ export const MainVideo = () => {
             />
           </Sequence>
         ))}
-      {project.audio.bgm && (
+      {!musicVideo && project.audio.bgm && (
         <Audio
           src={staticFile(project.audio.bgm)}
           loop
           volume={project.audio.bgm_volume}
         />
       )}
-      {soundClips.map((clip) => (
-        <Sequence
-          key={clip.id}
-          from={Math.round(clip.start_sec * fps)}
-          durationInFrames={Math.min(
-            durationInFrames - Math.round(clip.start_sec * fps),
-            Math.ceil((clip.play_duration_sec ?? clip.duration_sec) * fps),
-          )}
-        >
-          {clip.loop ? (
-            <Loop
-              durationInFrames={Math.max(1, Math.ceil(clip.duration_sec * fps))}
-            >
+      {!musicVideo &&
+        soundClips.map((clip) => (
+          <Sequence
+            key={clip.id}
+            from={Math.round(clip.start_sec * fps)}
+            durationInFrames={Math.min(
+              durationInFrames - Math.round(clip.start_sec * fps),
+              Math.ceil((clip.play_duration_sec ?? clip.duration_sec) * fps),
+            )}
+          >
+            {clip.loop ? (
+              <Loop
+                durationInFrames={Math.max(
+                  1,
+                  Math.ceil(clip.duration_sec * fps),
+                )}
+              >
+                <Audio
+                  src={staticFile(clip.path)}
+                  volume={clip.volume ?? 0.15}
+                />
+              </Loop>
+            ) : (
               <Audio src={staticFile(clip.path)} volume={clip.volume ?? 0.15} />
-            </Loop>
-          ) : (
-            <Audio src={staticFile(clip.path)} volume={clip.volume ?? 0.15} />
-          )}
-        </Sequence>
-      ))}
+            )}
+          </Sequence>
+        ))}
     </AbsoluteFill>
   );
 };

@@ -5,9 +5,9 @@ import { biimEnabled } from "./Presentation";
 // BiimSlideMakerの3つのテキスト領域を、自由なRemotion映像につなぐ。
 export interface BiimSceneData {
   id: string;
-  script: string;
-  note_top: string;
-  note_bottom: string;
+  script?: string;
+  note_top?: string;
+  note_bottom?: string;
   duration_sec: number;
   summary?: string;
   biim?: boolean;

@@ -106,6 +106,7 @@ export async function prepare() {
     ...Object.values(project.layout.fonts).map((font) => font.path),
     ...projectCharacters(project).map((character) => character.model),
     project.audio.bgm,
+    project.audio.music,
   ].filter(Boolean))
     await fs.access(localPath(file));
   await fs.mkdir(path.join(runtime, "public"), { recursive: true });

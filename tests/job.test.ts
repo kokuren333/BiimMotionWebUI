@@ -11,6 +11,9 @@ import {
   safeName,
   uniqueNames,
   validateForm,
+  agentPromptFor,
+  switchVideoMode,
+  modeSettingsFor,
   type MotionForm,
   type TemplateFiles,
 } from "../src/job.ts";
@@ -69,6 +72,136 @@ test("project is a creative brief with empty scenes and audio creation policy", 
   assert.equal(project.character.model, null);
   assert.deepEqual(project.layout.regions.subtitle, [350, 870, 1528, 178]);
   assert.equal(project.layout.fonts.subtitle.family, "M PLUS Rounded 1c");
+});
+
+test("MV mode preserves shared inputs and restores each mode's design and instructions", () => {
+  const explanation = {
+    ...form,
+    design: "解説の独自デザイン",
+    instructions: "資料を丁寧に説明",
+    musicMood: "夜の街と浮遊感",
+  };
+  const mv = switchVideoMode(explanation, "mv");
+  assert.equal(mv.title, explanation.title);
+  assert.equal(mv.urls, explanation.urls);
+  assert.equal(mv.musicMood, explanation.musicMood);
+  assert.match(mv.design, /曲調・感情・世界観/);
+  assert.match(mv.instructions, /完成音源/);
+  assert.equal(mv.voiceEngine, "none");
+  assert.equal(mv.characterUsage, "none");
+  const restored = switchVideoMode(
+    mv,
+    "explanation",
+    modeSettingsFor(explanation),
+  );
+  assert.equal(restored.design, explanation.design);
+  assert.equal(restored.instructions, explanation.instructions);
+  assert.equal(restored.voiceEngine, "aivis");
+  assert.equal(
+    switchVideoMode(
+      restored,
+      "mv",
+      modeSettingsFor({ ...mv, design: "独自MV" }),
+    ).design,
+    "独自MV",
+  );
+  assert.match(agentPromptFor("mv"), /曲に合ったモーショングラフィックス/);
+});
+
+test("MV ZIP includes the exact completed audio and enforces full-screen, no synthesis, no extra audio", async () => {
+  const current = {
+    ...form,
+    videoMode: "mv" as const,
+    musicMood: "静かな夜、サビで開放感",
+    musicLyrics: "夜の街へ\n\n[サビ]\n光の向こうへ",
+    musicDurationSec: 6.25,
+    fullScreen: false,
+    biimUsage: "mostly" as const,
+    generateAudio: true,
+    engineUrl: "",
+    styleId: -1,
+  };
+  const music = {
+    name: "完成曲.WAV",
+    type: "audio/wav",
+    size: 4,
+    data: new Uint8Array([1, 2, 3, 4]),
+  };
+  const assets = { sources: [], music, bgm: { ...music, name: "old-bgm.mp3" } };
+  assert.ok(
+    validateForm(current, { sources: [] }).some((error) =>
+      error.includes("完成音源"),
+    ),
+  );
+  assert.ok(
+    validateForm({ ...current, musicDurationSec: null }, assets).length,
+  );
+  assert.ok(
+    validateForm(current, { ...assets, music: { ...music, name: "bad.pdf" } })
+      .length,
+  );
+  assert.ok(
+    validateForm(current, {
+      ...assets,
+      music: { ...music, size: 501 * 1024 * 1024 },
+    }).length,
+  );
+  assert.equal(validateForm(current, assets).length, 0);
+  const zip = await JSZip.loadAsync(
+    (await generateJob(current, assets, await loadTemplates())).data,
+  );
+  const prefix = current.title + "/";
+  const project = JSON.parse(
+    await zip.file(prefix + "project.json")!.async("string"),
+  );
+  assert.equal(project.mode, "mv");
+  assert.equal(project.layout.mode, "fullscreen");
+  assert.equal(project.layout.frame, null);
+  assert.equal(project.direction.biim_usage, "never");
+  assert.equal(project.direction.music_mood, current.musicMood);
+  assert.equal(project.direction.music_lyrics, current.musicLyrics);
+  assert.equal(
+    await zip.file(prefix + "plan/lyrics.txt")!.async("string"),
+    current.musicLyrics,
+  );
+  assert.equal(project.voice.engine, "none");
+  assert.equal(project.direction.character_usage, "none");
+  assert.equal(project.research.allow_web_research, false);
+  assert.equal(project.audio.generate_bgm_se, false);
+  assert.equal(project.audio.bgm, null);
+  assert.equal(project.audio.music_duration_sec, 6.25);
+  assert.deepEqual(
+    await zip.file(prefix + "assets/music.wav")!.async("uint8array"),
+    music.data,
+  );
+  assert.equal(zip.file(prefix + "assets/bgm.mp3"), null);
+  const inactiveModel = {
+    ...music,
+    name: "unused.gltf",
+    size: 501 * 1024 * 1024,
+  };
+  assert.equal(
+    validateForm(current, { ...assets, character: inactiveModel }).length,
+    0,
+  );
+  const noModels = await JSZip.loadAsync(
+    (
+      await generateJob(
+        current,
+        { ...assets, character: inactiveModel },
+        await loadTemplates(),
+      )
+    ).data,
+  );
+  assert.equal(noModels.file(prefix + "assets/character.glb"), null);
+  const brief = await zip.file(prefix + "brief.md")!.async("string");
+  assert.match(brief, /静かな夜、サビで開放感/);
+  assert.match(brief, /希望尺30秒より音源の実測尺を優先/);
+  assert.doesNotMatch(brief, /## 場面テキストと字幕/);
+  const normal = await JSZip.loadAsync(
+    (await generateJob(form, assets, await loadTemplates())).data,
+  );
+  assert.equal(normal.file(prefix + "assets/music.wav"), null);
 });
 
 test("required values, unsafe URLs, invalid numeric values and asset limits are rejected", () => {
@@ -295,7 +428,10 @@ test("solo and duo profiles preserve names, roles, custom colors and independent
   );
   assert.match(createBrief(form, empty), /画面全体へ移動・拡大縮小・回転/);
   assert.match(createBrief(form, empty), /通常は基本位置を保ち/);
-  assert.match(createBrief(form, empty), /字幕位置はレイアウトごとの既定位置に固定/);
+  assert.match(
+    createBrief(form, empty),
+    /字幕位置はレイアウトごとの既定位置に固定/,
+  );
   const duoForm = {
     ...form,
     characterMode: "duo" as const,

@@ -30,6 +30,28 @@ const check = async (label, fn) => {
 let project;
 await check("project.json", async () => {
   project = await readJSON("project.json");
+  if (!["explanation", "mv"].includes(project.mode ?? "explanation"))
+    throw new Error("Unsupported video mode");
+  if (project.mode === "mv") {
+    if (
+      project.layout.mode !== "fullscreen" ||
+      project.layout.frame ||
+      project.direction.biim_usage !== "never"
+    )
+      throw new Error("MV must use fullscreen without Biim");
+    if (
+      project.voice.engine !== "none" ||
+      project.audio.generate_bgm_se ||
+      project.audio.bgm
+    )
+      throw new Error("MV must use only the completed music track");
+    if (
+      !project.audio.music ||
+      !/\.(mp3|wav|ogg|m4a|aac)$/i.test(project.audio.music)
+    )
+      throw new Error("MV music file is missing or unsupported");
+    finite(project.audio.music_duration_sec, 0.001, 7200, "music_duration_sec");
+  }
   if (!project.title?.trim()) throw new Error("Title is missing");
   for (const field of ["width", "height"]) {
     const value = finite(project.video[field], 240, 7680, field);
@@ -83,6 +105,7 @@ if (project) {
       ...Object.values(project.layout.fonts).map((font) => font.path),
       ...projectCharacters(project).map((character) => character.model),
       project.audio.bgm,
+      project.audio.music,
     ].filter(Boolean))
       await fs.access(localPath(asset));
   });
@@ -147,21 +170,26 @@ if (process.argv.includes("--final")) {
       );
     for (const scene of project.scenes) {
       validId(scene.id);
-      if (!scene.script?.trim() && !scene.dialogue?.length)
+      if (
+        project.mode !== "mv" &&
+        !scene.script?.trim() &&
+        !scene.dialogue?.length
+      )
         throw new Error("Scene script / dialogue missing");
       if (scene.biim === true && project.layout.mode === "fullscreen")
         throw new Error("Biim scene forbidden in fullscreen mode");
       if (
-        typeof scene.note_top !== "string" ||
-        typeof scene.note_bottom !== "string"
+        project.mode !== "mv" &&
+        (typeof scene.note_top !== "string" ||
+          typeof scene.note_bottom !== "string")
       )
         throw new Error("Scene note_top / note_bottom must be strings");
       finite(scene.duration_sec, 0.001, 7200, "scene duration");
     }
-    for (const segment of sceneSegments(project))
+    for (const segment of project.mode === "mv" ? [] : sceneSegments(project))
       narrationSpeaker(project, segment);
     for (const file of [
-      "plan/script.md",
+      project.mode === "mv" ? "plan/music-analysis.md" : "plan/script.md",
       "plan/storyboard.md",
       "plan/sources.md",
       "reports/visual-qa.md",

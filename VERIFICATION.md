@@ -1,5 +1,14 @@
 # Verification — 2026-10-06
 
+## MV mode (2026-10-06)
+
+- `npm test`: 13 tests passed. New MV coverage checks mode-specific prompt restoration, required/valid completed audio, size limits, exact music bytes, lyric text/newline preservation in project.json and plan/lyrics.txt, forced fullscreen/no Biim, disabled Aivis and extra audio, and exclusion of inactive BGM/GLB assets.
+- Browser inspection confirmed that MV input uses sections 01–03 only; character/audio/output/advanced sections and their sidebar links disappear. Song mood, lyrics and completed-audio inputs appear in section 01. A 6.25-second synthetic WAV was read successfully, and UI ZIP generation showed its success message with no browser errors. The in-app browser did not return a download event, so ZIP bytes were inspected through the generator tests instead.
+- Switching back to explanation restored the original Biim design, Aivis controls and advanced settings. Switching to MV again restored its edited design, mood, lyrics and selected music duration.
+- The generated MV runtime passed validation including TypeScript. A real preview render used the completed 6.25-second WAV instead of the 30-second target or the normal six-second starter duration. FFprobe confirmed 188 video frames at 30fps (6.266667 seconds), H.264 at 320×180 and AAC audio; container duration was 6.272 seconds. Audio was present, with mean volume −22.5dB and peak −19.5dB for the synthetic mono tone rendered to stereo.
+- Frames at 3s and 6.1s were visually inspected: the starter scene filled the frame with no Biim border, character or narration caption, including the final portion of the track. The fixture tests the renderer and audio wiring; it is not a finished artistic MV or a lyric alignment evaluation.
+- `npm run build -- --base=/BiimMotionWebUI/` and `git diff --check` passed. README files describe the MV workflow, full-track playback, lyric input and plan/music-analysis.md completion record.
+
 ## Free character motion in solo and duo modes (2026-10-06)
 
 - Follow-up clarified the default staging policy: captions stay at the layout's fixed position, characters usually stay at their basic positions, and independent movement/scale/rotation beyond the slots is available for specific scene actions. The brief, UI help text and production instructions now agree on this policy; the character motion APIs remain available.

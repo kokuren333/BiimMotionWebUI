@@ -7,6 +7,10 @@ import {
 } from "react";
 import {
   aivisStyleLabel,
+  agentPromptFor,
+  modeSettingsFor,
+  switchVideoMode,
+  type ModeSettings,
   createProject,
   characterProfiles,
   defaults,
@@ -113,8 +117,6 @@ const sections = [
   { id: "character", title: "キャラクター", caption: "CHARACTER" },
   { id: "voice", title: "音声と出力", caption: "VOICE & OUTPUT" },
 ];
-const agentPrompt =
-  "AGENTS.mdを読み、brief.mdとsourcesを基に動画を制作してください。台本・ストーリーボード・Remotionシーン・Aivis音声・3Dキャラ同期を実装し、設定に応じて場面に合う簡単なBGM・SEも制作してください。previewを映像と音で確認して修正後、final.mp4を完成させてください。";
 const sizeLabel = (size: number) =>
   size < 1024 * 1024
     ? `${(size / 1024).toFixed(1)} KB`
@@ -174,6 +176,11 @@ export default function App() {
   const [character, setCharacter] = useState<File>();
   const [secondCharacter, setSecondCharacter] = useState<File>();
   const [bgm, setBgm] = useState<File>();
+  const [music, setMusic] = useState<File>();
+  const [musicStatus, setMusicStatus] = useState("");
+  const modeDrafts = useRef<
+    Partial<Record<MotionForm["videoMode"], ModeSettings>>
+  >({});
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
@@ -186,6 +193,8 @@ export default function App() {
   const [info, setInfo] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const isMV = form.videoMode === "mv";
+  const agentPrompt = agentPromptFor(form.videoMode);
   const assets: JobAssets = {
     sources: sources.map((file) => ({
       name: file.name,
@@ -193,14 +202,17 @@ export default function App() {
       size: file.size,
       type: file.type,
     })),
-    character: character && {
-      name: character.name,
-      data: character,
-      size: character.size,
-      type: character.type,
-    },
+    character:
+      !isMV && character
+        ? {
+            name: character.name,
+            data: character,
+            size: character.size,
+            type: character.type,
+          }
+        : undefined,
     secondCharacter:
-      form.characterMode === "duo" && secondCharacter
+      !isMV && form.characterMode === "duo" && secondCharacter
         ? {
             name: secondCharacter.name,
             data: secondCharacter,
@@ -208,7 +220,14 @@ export default function App() {
             type: secondCharacter.type,
           }
         : undefined,
-    bgm: bgm && { name: bgm.name, data: bgm, size: bgm.size, type: bgm.type },
+    bgm:
+      !isMV && bgm
+        ? { name: bgm.name, data: bgm, size: bgm.size, type: bgm.type }
+        : undefined,
+    music:
+      isMV && music
+        ? { name: music.name, data: music, size: music.size, type: music.type }
+        : undefined,
   };
   const project = createProject(form, assets);
   const fullScreen = usesFullScreen(form);
@@ -222,14 +241,25 @@ export default function App() {
       Boolean(form.instructions.trim()),
     Boolean(form.design.trim()),
     Boolean(character || form.characterNotes.trim()),
-    Boolean(form.voiceEngine && form.width && form.height),
+    Boolean(
+      (isMV ? music && form.musicDurationSec : form.voiceEngine) &&
+      form.width &&
+      form.height,
+    ),
   ];
   const valid = validateForm(form, assets).length === 0;
   const totalBytes =
     sources.reduce((sum, file) => sum + file.size, 0) +
-    (character?.size ?? 0) +
-    (form.characterMode === "duo" ? (secondCharacter?.size ?? 0) : 0) +
-    (bgm?.size ?? 0);
+    (!isMV ? (character?.size ?? 0) : 0) +
+    (!isMV && form.characterMode === "duo" ? (secondCharacter?.size ?? 0) : 0) +
+    (isMV ? (music?.size ?? 0) : (bgm?.size ?? 0));
+  function selectVideoMode(mode: MotionForm["videoMode"]) {
+    if (mode === form.videoMode) return;
+    modeDrafts.current[form.videoMode] = modeSettingsFor(form);
+    setForm(switchVideoMode(form, mode, modeDrafts.current[mode]));
+    setCopyStatus("");
+    changed();
+  }
   function changed() {
     setSuccess("");
     setErrors([]);
@@ -273,6 +303,43 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!music) {
+      setMusicStatus("");
+      return;
+    }
+    const url = URL.createObjectURL(music);
+    const audio = new Audio();
+    let live = true;
+    audio.preload = "metadata";
+    setMusicStatus("音源の尺を確認中…");
+    audio.onloadedmetadata = () => {
+      if (!live) return;
+      const duration = audio.duration;
+      if (!Number.isFinite(duration) || duration <= 0 || duration > 7200) {
+        setMusicStatus("0秒超〜7,200秒の音源を選択してください。");
+        return;
+      }
+      setForm((prev) => ({ ...prev, musicDurationSec: duration }));
+      setMusicStatus(
+        `完成音源の尺: ${duration.toFixed(2)}秒。この尺でMVを制作します。`,
+      );
+    };
+    audio.onerror = () => {
+      if (live)
+        setMusicStatus(
+          "音源を読み込めません。再生できるMP3 / WAV / OGG / M4A / AACを選択してください。",
+        );
+    };
+    audio.src = url;
+    return () => {
+      live = false;
+      audio.removeAttribute("src");
+      audio.load();
+      URL.revokeObjectURL(url);
+    };
+  }, [music]);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter((entry) => entry.isIntersecting);
@@ -280,12 +347,12 @@ export default function App() {
       },
       { rootMargin: "-100px 0px -50% 0px", threshold: 0 },
     );
-    sections.forEach((section) => {
+    (isMV ? sections.slice(0, 3) : sections).forEach((section) => {
       const element = document.getElementById(section.id);
       if (element) observer.observe(element);
     });
     return () => observer.disconnect();
-  }, []);
+  }, [isMV]);
   useEffect(() => {
     if (info) dialogRef.current?.showModal();
     else dialogRef.current?.close();
@@ -347,6 +414,8 @@ export default function App() {
     }
   }
   function sample() {
+    modeDrafts.current = {};
+    setMusic(undefined);
     setForm({
       ...defaults,
       title: "虹はどうしてできる？",
@@ -401,7 +470,7 @@ export default function App() {
         </div>
         <div className="nav-label">YOUR BRIEF</div>
         <nav aria-label="入力セクション">
-          {sections.map((section, i) => (
+          {(isMV ? sections.slice(0, 3) : sections).map((section, i) => (
             <a
               key={section.id}
               href={`#${section.id}`}
@@ -492,6 +561,25 @@ export default function App() {
             <div className="editor-grid">
               <fieldset className="form-body" disabled={busy}>
                 <Section index={0}>
+                  <label>
+                    制作モード
+                    <select
+                      value={form.videoMode}
+                      onChange={(e) =>
+                        selectVideoMode(
+                          e.target.value as MotionForm["videoMode"],
+                        )
+                      }
+                    >
+                      <option value="explanation">解説動画</option>
+                      <option value="mv">MV — 完成音源から制作</option>
+                    </select>
+                    <small>
+                      {isMV
+                        ? "完成音源と資料を使い、曲の雰囲気に合う全画面のMVを制作します。"
+                        : "企画・資料を基に、音声と映像を制作します。"}
+                    </small>
+                  </label>
                   <p className="section-intro">
                     まずは、動画のゴールを決めましょう。
                   </p>
@@ -542,13 +630,73 @@ export default function App() {
                         <span>秒</span>
                       </div>
                       <small>
-                        {Math.floor(form.durationSec / 60)}分{" "}
-                        {form.durationSec % 60}秒を目安に制作
+                        {isMV
+                          ? "MVは完成音源の実測尺を優先します。"
+                          : `${Math.floor(form.durationSec / 60)}分 ${form.durationSec % 60}秒を目安に制作`}
                       </small>
                     </label>
                   </div>
+                  {isMV && (
+                    <>
+                      <label>
+                        曲の雰囲気・世界観
+                        <textarea
+                          rows={4}
+                          value={form.musicMood}
+                          onChange={(e) => field("musicMood", e.target.value)}
+                          placeholder="例：夜の街を感じる浮遊感のあるエレクトロ。青と紫、静かなAメロからサビで大きく広がる映像。ジャンル、感情、テンポ、色、モチーフなど。"
+                        />
+                      </label>
+                      <label>
+                        歌詞（任意）
+                        <textarea
+                          rows={8}
+                          value={form.musicLyrics}
+                          onChange={(e) => field("musicLyrics", e.target.value)}
+                          placeholder={
+                            "歌詞を改行したまま入力してください。\nAメロ・サビなどの区切りも記入できます。"
+                          }
+                        />
+                        <small>
+                          原文と改行を保存し、歌詞の表示・タイポグラフィ演出に使用します。
+                        </small>
+                      </label>
+                      <div className="asset-picker">
+                        <span className="asset-icon music">♫</span>
+                        <div>
+                          <strong>
+                            完成音源 <em>必須</em>
+                          </strong>
+                          <small>MP3 / WAV / OGG / M4A / AAC</small>
+                        </div>
+                        <label className="file-button">
+                          音源を選ぶ
+                          <input
+                            type="file"
+                            accept=".mp3,.wav,.ogg,.m4a,.aac"
+                            aria-label="MVの完成音源を選択"
+                            onChange={(e) => {
+                              setMusic(e.target.files?.[0]);
+                              field("musicDurationSec", null);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <AttachmentList
+                        files={music ? [music] : []}
+                        remove={() => {
+                          setMusic(undefined);
+                          field("musicDurationSec", null);
+                        }}
+                      />
+                      <small role="status">
+                        {musicStatus ||
+                          "音源の尺を確認し、曲全体に合わせて映像を構成します。歌詞や画像などは02の参考資料へ添付できます。"}
+                      </small>
+                    </>
+                  )}
                 </Section>
-
                 <Section index={1}>
                   <p className="section-intro">
                     説明の根拠と、動画全体へのリクエストを。
@@ -638,7 +786,7 @@ export default function App() {
                       type="checkbox"
                       role="switch"
                       checked={fullScreen}
-                      disabled={portrait}
+                      disabled={portrait || isMV}
                       onChange={(e) => {
                         setForm((prev) => ({
                           ...prev,
@@ -651,9 +799,11 @@ export default function App() {
                     <span>
                       全画面アニメーション・モーショングラフィックス
                       <small>
-                        {portrait
-                          ? "縦9:16ではBiim枠を使用しません。"
-                          : "オンにするとBiim枠を外し、映像に画面全体を使います。"}
+                        {isMV
+                          ? "MVではBiim枠を使用せず、画面全体を使います。"
+                          : portrait
+                            ? "縦9:16ではBiim枠を使用しません。"
+                            : "オンにするとBiim枠を外し、映像に画面全体を使います。"}
                       </small>
                     </span>
                   </label>
@@ -685,536 +835,578 @@ export default function App() {
                   </div>
                 </Section>
 
-                <Section index={3}>
-                  <p className="section-intro">
-                    3Dキャラクターを、説明を支える演者に。
-                  </p>
-                  {select("characterMode", "キャラクターモード", [
-                    ["solo", "1人で解説"],
-                    ["duo", "2人の掛け合い"],
-                  ])}
-                  {characterProfiles(form).map((profile, index) => {
-                    const model = index === 0 ? character : secondCharacter;
-                    const setModel =
-                      index === 0 ? setCharacter : setSecondCharacter;
-                    const label = `${index + 1}人目`;
-                    return (
-                      <fieldset className="character-card" key={index}>
-                        <legend>
-                          {label}
-                          {profile.name ? ` · ${profile.name}` : ""}
-                        </legend>
-                        <div className="row">
-                          <label>
-                            名前（表記）
-                            <input
-                              aria-label={`${label}の名前（表記）`}
-                              value={profile.name}
-                              onChange={(e) =>
-                                characterField(index, "name", e.target.value)
-                              }
-                              placeholder="例：春日あかり"
-                            />
-                          </label>
-                          <label>
-                            読み仮名
-                            <input
-                              aria-label={`${label}の読み仮名`}
-                              value={profile.reading}
-                              onChange={(e) =>
-                                characterField(index, "reading", e.target.value)
-                              }
-                              placeholder="例：かすがあかり"
-                            />
-                          </label>
-                        </div>
-                        <label>
-                          役割
-                          <input
-                            aria-label={`${label}の役割`}
-                            value={profile.role}
-                            onChange={(e) =>
-                              characterField(index, "role", e.target.value)
-                            }
-                          />
-                        </label>
-                        <label>
-                          キャラの初期配置
-                          <select
-                            aria-label={`${label}の配置`}
-                            value={profile.position}
-                            onChange={(e) =>
-                              characterField(
-                                index,
-                                "position",
-                                e.target.value as CharacterForm["position"],
-                              )
-                            }
-                          >
-                            <option value="left">左</option>
-                            <option value="right">右</option>
-                          </select>
-                          <small>
-                            字幕はこの配置に合わせた位置に固定します。1人・2人とも、普段は基本位置を保ち、必要な場面では枠を越えて自由に移動・拡縮できます。
-                          </small>
-                        </label>
-                        <label>
-                          性格
-                          <textarea
-                            aria-label={`${label}の性格`}
-                            rows={2}
-                            value={profile.personality}
-                            onChange={(e) =>
-                              characterField(
-                                index,
-                                "personality",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </label>
-                        <label>
-                          口調
-                          <textarea
-                            aria-label={`${label}の口調`}
-                            rows={2}
-                            value={profile.speakingStyle}
-                            onChange={(e) =>
-                              characterField(
-                                index,
-                                "speakingStyle",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </label>
-                        <label>
-                          表情・動きなどへの指示
-                          <textarea
-                            aria-label={`${label}の動きへの指示`}
-                            rows={2}
-                            value={profile.notes}
-                            onChange={(e) =>
-                              characterField(index, "notes", e.target.value)
-                            }
-                          />
-                        </label>
-                        <div className="subtitle-settings">
-                          <label>
-                            字幕色
-                            <input
-                              type="color"
-                              aria-label={`${label}の字幕色`}
-                              value={
-                                /^#[0-9a-f]{6}$/i.test(profile.subtitleColor)
-                                  ? profile.subtitleColor
-                                  : index === 0
-                                    ? defaults.subtitleColor
-                                    : defaults.secondCharacter.subtitleColor
-                              }
-                              onChange={(e) =>
-                                characterField(
-                                  index,
-                                  "subtitleColor",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          </label>
-                          <label>
-                            HEX
-                            <input
-                              className="color-hex"
-                              aria-label={`${label}の字幕色（HEX）`}
-                              value={profile.subtitleColor}
-                              maxLength={7}
-                              onChange={(e) =>
-                                characterField(
-                                  index,
-                                  "subtitleColor",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          </label>
-                          <span
-                            className="subtitle-sample"
-                            style={{ color: profile.subtitleColor }}
-                          >
-                            {profile.name || label}の字幕
-                          </span>
-                          <small>白ふち · {profile.subtitleColor}</small>
-                        </div>
-                        <div className="asset-picker">
-                          <span className="asset-icon">
-                            <Icon name="box" size={24} />
-                          </span>
-                          <div>
-                            <strong>{label}の3Dモデル</strong>
-                            <small>GLB形式 · 任意</small>
-                          </div>
-                          <label className="file-button">
-                            モデルを選ぶ
-                            <input
-                              type="file"
-                              accept=".glb"
-                              aria-label={`${label}の3Dモデルを選択`}
-                              onChange={(e) => {
-                                setModel(e.target.files?.[0]);
-                                e.target.value = "";
-                                changed();
-                              }}
-                            />
-                          </label>
-                        </div>
-                        <AttachmentList
-                          files={model ? [model] : []}
-                          remove={() => {
-                            setModel(undefined);
-                            changed();
-                          }}
-                        />
-                        {form.characterMode === "duo" &&
-                          form.voiceEngine === "aivis" && (
-                            <>
-                              <div className="row">
-                                <label>
-                                  Style ID
-                                  <input
-                                    aria-label={`${label}のStyle ID`}
-                                    type="number"
-                                    min={0}
-                                    step={1}
-                                    value={profile.styleId}
-                                    onChange={(e) =>
-                                      characterField(
-                                        index,
-                                        "styleId",
-                                        Number(e.target.value),
-                                      )
-                                    }
-                                  />
-                                  <small>
-                                    {aivisStyleLabel(profile.styleId)}
-                                  </small>
-                                </label>
-                                <label>
-                                  話速
-                                  <input
-                                    aria-label={`${label}の話速`}
-                                    type="number"
-                                    min={0.5}
-                                    max={2}
-                                    step={0.05}
-                                    value={profile.voiceSpeed}
-                                    onChange={(e) =>
-                                      characterField(
-                                        index,
-                                        "voiceSpeed",
-                                        Number(e.target.value),
-                                      )
-                                    }
-                                  />
-                                </label>
-                              </div>
+                {!isMV && (
+                  <>
+                    <Section index={3}>
+                      <p className="section-intro">
+                        3Dキャラクターを、説明を支える演者に。
+                      </p>
+                      {select("characterMode", "キャラクターモード", [
+                        ["solo", "1人で解説"],
+                        ["duo", "2人の掛け合い"],
+                      ])}
+                      {characterProfiles(form).map((profile, index) => {
+                        const model = index === 0 ? character : secondCharacter;
+                        const setModel =
+                          index === 0 ? setCharacter : setSecondCharacter;
+                        const label = `${index + 1}人目`;
+                        return (
+                          <fieldset className="character-card" key={index}>
+                            <legend>
+                              {label}
+                              {profile.name ? ` · ${profile.name}` : ""}
+                            </legend>
+                            <div className="row">
                               <label>
-                                声・読み方への指示
-                                <textarea
-                                  aria-label={`${label}の声への指示`}
-                                  rows={2}
-                                  value={profile.voiceNotes}
+                                名前（表記）
+                                <input
+                                  aria-label={`${label}の名前（表記）`}
+                                  value={profile.name}
                                   onChange={(e) =>
                                     characterField(
                                       index,
-                                      "voiceNotes",
+                                      "name",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="例：春日あかり"
+                                />
+                              </label>
+                              <label>
+                                読み仮名
+                                <input
+                                  aria-label={`${label}の読み仮名`}
+                                  value={profile.reading}
+                                  onChange={(e) =>
+                                    characterField(
+                                      index,
+                                      "reading",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="例：かすがあかり"
+                                />
+                              </label>
+                            </div>
+                            <label>
+                              役割
+                              <input
+                                aria-label={`${label}の役割`}
+                                value={profile.role}
+                                onChange={(e) =>
+                                  characterField(index, "role", e.target.value)
+                                }
+                              />
+                            </label>
+                            <label>
+                              キャラの初期配置
+                              <select
+                                aria-label={`${label}の配置`}
+                                value={profile.position}
+                                onChange={(e) =>
+                                  characterField(
+                                    index,
+                                    "position",
+                                    e.target.value as CharacterForm["position"],
+                                  )
+                                }
+                              >
+                                <option value="left">左</option>
+                                <option value="right">右</option>
+                              </select>
+                              <small>
+                                字幕はこの配置に合わせた位置に固定します。1人・2人とも、普段は基本位置を保ち、必要な場面では枠を越えて自由に移動・拡縮できます。
+                              </small>
+                            </label>
+                            <label>
+                              性格
+                              <textarea
+                                aria-label={`${label}の性格`}
+                                rows={2}
+                                value={profile.personality}
+                                onChange={(e) =>
+                                  characterField(
+                                    index,
+                                    "personality",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </label>
+                            <label>
+                              口調
+                              <textarea
+                                aria-label={`${label}の口調`}
+                                rows={2}
+                                value={profile.speakingStyle}
+                                onChange={(e) =>
+                                  characterField(
+                                    index,
+                                    "speakingStyle",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </label>
+                            <label>
+                              表情・動きなどへの指示
+                              <textarea
+                                aria-label={`${label}の動きへの指示`}
+                                rows={2}
+                                value={profile.notes}
+                                onChange={(e) =>
+                                  characterField(index, "notes", e.target.value)
+                                }
+                              />
+                            </label>
+                            <div className="subtitle-settings">
+                              <label>
+                                字幕色
+                                <input
+                                  type="color"
+                                  aria-label={`${label}の字幕色`}
+                                  value={
+                                    /^#[0-9a-f]{6}$/i.test(
+                                      profile.subtitleColor,
+                                    )
+                                      ? profile.subtitleColor
+                                      : index === 0
+                                        ? defaults.subtitleColor
+                                        : defaults.secondCharacter.subtitleColor
+                                  }
+                                  onChange={(e) =>
+                                    characterField(
+                                      index,
+                                      "subtitleColor",
                                       e.target.value,
                                     )
                                   }
                                 />
                               </label>
+                              <label>
+                                HEX
+                                <input
+                                  className="color-hex"
+                                  aria-label={`${label}の字幕色（HEX）`}
+                                  value={profile.subtitleColor}
+                                  maxLength={7}
+                                  onChange={(e) =>
+                                    characterField(
+                                      index,
+                                      "subtitleColor",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </label>
+                              <span
+                                className="subtitle-sample"
+                                style={{ color: profile.subtitleColor }}
+                              >
+                                {profile.name || label}の字幕
+                              </span>
+                              <small>白ふち · {profile.subtitleColor}</small>
+                            </div>
+                            <div className="asset-picker">
+                              <span className="asset-icon">
+                                <Icon name="box" size={24} />
+                              </span>
+                              <div>
+                                <strong>{label}の3Dモデル</strong>
+                                <small>GLB形式 · 任意</small>
+                              </div>
+                              <label className="file-button">
+                                モデルを選ぶ
+                                <input
+                                  type="file"
+                                  accept=".glb"
+                                  aria-label={`${label}の3Dモデルを選択`}
+                                  onChange={(e) => {
+                                    setModel(e.target.files?.[0]);
+                                    e.target.value = "";
+                                    changed();
+                                  }}
+                                />
+                              </label>
+                            </div>
+                            <AttachmentList
+                              files={model ? [model] : []}
+                              remove={() => {
+                                setModel(undefined);
+                                changed();
+                              }}
+                            />
+                            {form.characterMode === "duo" &&
+                              !isMV &&
+                              form.voiceEngine === "aivis" && (
+                                <>
+                                  <div className="row">
+                                    <label>
+                                      Style ID
+                                      <input
+                                        aria-label={`${label}のStyle ID`}
+                                        type="number"
+                                        min={0}
+                                        step={1}
+                                        value={profile.styleId}
+                                        onChange={(e) =>
+                                          characterField(
+                                            index,
+                                            "styleId",
+                                            Number(e.target.value),
+                                          )
+                                        }
+                                      />
+                                      <small>
+                                        {aivisStyleLabel(profile.styleId)}
+                                      </small>
+                                    </label>
+                                    <label>
+                                      話速
+                                      <input
+                                        aria-label={`${label}の話速`}
+                                        type="number"
+                                        min={0.5}
+                                        max={2}
+                                        step={0.05}
+                                        value={profile.voiceSpeed}
+                                        onChange={(e) =>
+                                          characterField(
+                                            index,
+                                            "voiceSpeed",
+                                            Number(e.target.value),
+                                          )
+                                        }
+                                      />
+                                    </label>
+                                  </div>
+                                  <label>
+                                    声・読み方への指示
+                                    <textarea
+                                      aria-label={`${label}の声への指示`}
+                                      rows={2}
+                                      value={profile.voiceNotes}
+                                      onChange={(e) =>
+                                        characterField(
+                                          index,
+                                          "voiceNotes",
+                                          e.target.value,
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                </>
+                              )}
+                          </fieldset>
+                        );
+                      })}
+                      <small>
+                        モデル未添付でもジョブを作成できます。必要な素材や代替案はOpusが整理します。
+                      </small>
+                    </Section>
+
+                    <Section index={4}>
+                      {isMV && (
+                        <p className="section-intro">
+                          完成音源を通常音量で最初から最後まで使用します。曲に合わせて映像を制作し、Aivis音声や追加BGM・SEは生成しません。
+                        </p>
+                      )}
+                      {!isMV && (
+                        <>
+                          <p className="section-intro">
+                            声と、最終的な動画の仕様を設定します。
+                          </p>
+                          {select("voiceEngine", "音声エンジン", [
+                            ["aivis", "AivisSpeech — ローカル音声合成"],
+                            ["none", "音声合成なし"],
+                          ])}
+                          {form.voiceEngine === "aivis" && (
+                            <>
+                              <label>
+                                Aivis Engine URL
+                                <input
+                                  type="url"
+                                  value={form.engineUrl}
+                                  onChange={(e) =>
+                                    field("engineUrl", e.target.value)
+                                  }
+                                />
+                                <small>
+                                  制作するPCで起動するエンジンのURLです。WebUIからは接続しません。
+                                </small>
+                              </label>
+                              {form.characterMode === "solo" && (
+                                <div className="row">
+                                  <label>
+                                    Style ID
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      step={1}
+                                      value={form.styleId}
+                                      onChange={(e) =>
+                                        field("styleId", Number(e.target.value))
+                                      }
+                                    />
+                                    <small>
+                                      {aivisStyleLabel(form.styleId)}
+                                    </small>
+                                  </label>
+                                  <label>
+                                    話速
+                                    <div className="unit-input">
+                                      <input
+                                        aria-label="話速"
+                                        type="number"
+                                        min={0.5}
+                                        max={2}
+                                        step={0.05}
+                                        value={form.voiceSpeed}
+                                        onChange={(e) =>
+                                          field(
+                                            "voiceSpeed",
+                                            Number(e.target.value),
+                                          )
+                                        }
+                                      />
+                                      <span>×</span>
+                                    </div>
+                                  </label>
+                                </div>
+                              )}
                             </>
                           )}
-                      </fieldset>
-                    );
-                  })}
-                  <small>
-                    モデル未添付でもジョブを作成できます。必要な素材や代替案はOpusが整理します。
-                  </small>
-                </Section>
-
-                <Section index={4}>
-                  <p className="section-intro">
-                    声と、最終的な動画の仕様を設定します。
-                  </p>
-                  {select("voiceEngine", "音声エンジン", [
-                    ["aivis", "AivisSpeech — ローカル音声合成"],
-                    ["none", "音声合成なし"],
-                  ])}
-                  {form.voiceEngine === "aivis" && (
-                    <>
-                      <label>
-                        Aivis Engine URL
-                        <input
-                          type="url"
-                          value={form.engineUrl}
-                          onChange={(e) => field("engineUrl", e.target.value)}
-                        />
-                        <small>
-                          制作するPCで起動するエンジンのURLです。WebUIからは接続しません。
-                        </small>
-                      </label>
-                      {form.characterMode === "solo" && (
-                        <div className="row">
-                          <label>
-                            Style ID
-                            <input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={form.styleId}
-                              onChange={(e) =>
-                                field("styleId", Number(e.target.value))
-                              }
-                            />
-                            <small>{aivisStyleLabel(form.styleId)}</small>
-                          </label>
-                          <label>
-                            話速
-                            <div className="unit-input">
-                              <input
-                                aria-label="話速"
-                                type="number"
-                                min={0.5}
-                                max={2}
-                                step={0.05}
-                                value={form.voiceSpeed}
+                          {form.characterMode === "solo" && (
+                            <label>
+                              声・読み方への指示
+                              <textarea
+                                rows={2}
+                                value={form.voiceNotes}
                                 onChange={(e) =>
-                                  field("voiceSpeed", Number(e.target.value))
+                                  field("voiceNotes", e.target.value)
                                 }
                               />
-                              <span>×</span>
+                            </label>
+                          )}
+                          {form.characterMode === "duo" && (
+                            <small>
+                              Style
+                              ID・話速・読み方は各キャラクター欄で設定します。同じStyle
+                              IDでは同じ声になります。
+                            </small>
+                          )}
+                          <div className="asset-picker">
+                            <span className="asset-icon music">♫</span>
+                            <div>
+                              <strong>BGM</strong>
+                              <small>MP3 / WAV / OGG / M4A / AAC · 任意</small>
                             </div>
+                            <label className="file-button">
+                              音源を選ぶ
+                              <input
+                                type="file"
+                                accept=".mp3,.wav,.ogg,.m4a,.aac"
+                                aria-label="BGMを選択"
+                                onChange={(e) => {
+                                  setBgm(e.target.files?.[0]);
+                                  e.target.value = "";
+                                  changed();
+                                }}
+                              />
+                            </label>
+                          </div>
+                          <AttachmentList
+                            files={bgm ? [bgm] : []}
+                            remove={() => {
+                              setBgm(undefined);
+                              changed();
+                            }}
+                          />
+                          <label className="check-label">
+                            <input
+                              type="checkbox"
+                              checked={form.generateAudio}
+                              onChange={(e) =>
+                                field("generateAudio", e.target.checked)
+                              }
+                            />
+                            <span>
+                              場面に合う簡単なBGM・SEをOpusに作らせる
+                              <small>
+                                添付BGMを優先し、必要な効果音やループを制作します。
+                              </small>
+                            </span>
                           </label>
-                        </div>
+                          <label>
+                            BGM・SEへの指示
+                            <textarea
+                              rows={3}
+                              value={form.audioNotes}
+                              onChange={(e) =>
+                                field("audioNotes", e.target.value)
+                              }
+                              placeholder="音の雰囲気、SEを入れたい場面、避けたい音など。"
+                            />
+                          </label>
+                        </>
                       )}
-                    </>
-                  )}
-                  {form.characterMode === "solo" && (
-                    <label>
-                      声・読み方への指示
-                      <textarea
-                        rows={2}
-                        value={form.voiceNotes}
-                        onChange={(e) => field("voiceNotes", e.target.value)}
-                      />
-                    </label>
-                  )}
-                  {form.characterMode === "duo" && (
-                    <small>
-                      Style
-                      ID・話速・読み方は各キャラクター欄で設定します。同じStyle
-                      IDでは同じ声になります。
-                    </small>
-                  )}
-                  <div className="asset-picker">
-                    <span className="asset-icon music">♫</span>
-                    <div>
-                      <strong>BGM</strong>
-                      <small>MP3 / WAV / OGG / M4A / AAC · 任意</small>
-                    </div>
-                    <label className="file-button">
-                      音源を選ぶ
-                      <input
-                        type="file"
-                        accept=".mp3,.wav,.ogg,.m4a,.aac"
-                        aria-label="BGMを選択"
-                        onChange={(e) => {
-                          setBgm(e.target.files?.[0]);
-                          e.target.value = "";
-                          changed();
-                        }}
-                      />
-                    </label>
-                  </div>
-                  <AttachmentList
-                    files={bgm ? [bgm] : []}
-                    remove={() => {
-                      setBgm(undefined);
-                      changed();
-                    }}
-                  />
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={form.generateAudio}
-                      onChange={(e) => field("generateAudio", e.target.checked)}
-                    />
-                    <span>
-                      場面に合う簡単なBGM・SEをOpusに作らせる
-                      <small>
-                        添付BGMを優先し、必要な効果音やループを制作します。
-                      </small>
-                    </span>
-                  </label>
-                  <label>
-                    BGM・SEへの指示
-                    <textarea
-                      rows={3}
-                      value={form.audioNotes}
-                      onChange={(e) => field("audioNotes", e.target.value)}
-                      placeholder="音の雰囲気、SEを入れたい場面、避けたい音など。"
-                    />
-                  </label>
-                  <label>
-                    画面の向き
-                    <select
-                      value={portrait ? "portrait" : "landscape"}
-                      onChange={(e) => {
-                        const toPortrait = e.target.value === "portrait";
-                        setForm((prev) => ({
-                          ...prev,
-                          width: Math[toPortrait ? "min" : "max"](
-                            prev.width,
-                            prev.height,
-                          ),
-                          height: Math[toPortrait ? "max" : "min"](
-                            prev.width,
-                            prev.height,
-                          ),
-                        }));
-                        changed();
-                      }}
+                      <label>
+                        画面の向き
+                        <select
+                          value={portrait ? "portrait" : "landscape"}
+                          onChange={(e) => {
+                            const toPortrait = e.target.value === "portrait";
+                            setForm((prev) => ({
+                              ...prev,
+                              width: Math[toPortrait ? "min" : "max"](
+                                prev.width,
+                                prev.height,
+                              ),
+                              height: Math[toPortrait ? "max" : "min"](
+                                prev.width,
+                                prev.height,
+                              ),
+                            }));
+                            changed();
+                          }}
+                        >
+                          <option value="landscape">横16:9</option>
+                          <option value="portrait">縦9:16（Biim枠なし）</option>
+                        </select>
+                      </label>
+                      <div className="row">
+                        <label>
+                          出力解像度
+                          <select
+                            value={`${form.width}x${form.height}`}
+                            onChange={(e) => {
+                              const [width, height] = e.target.value
+                                .split("x")
+                                .map(Number);
+                              setForm((prev) => ({ ...prev, width, height }));
+                              changed();
+                            }}
+                          >
+                            {(portrait
+                              ? [
+                                  [1080, 1920, "Full HD"],
+                                  [720, 1280, "HD"],
+                                  [2160, 3840, "4K"],
+                                ]
+                              : [
+                                  [1920, 1080, "Full HD"],
+                                  [1280, 720, "HD"],
+                                  [3840, 2160, "4K"],
+                                ]
+                            ).map(([w, h, title]) => (
+                              <option key={`${w}x${h}`} value={`${w}x${h}`}>
+                                {title} · {w} × {h}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          フレームレート
+                          <select
+                            value={form.fps}
+                            onChange={(e) =>
+                              field("fps", Number(e.target.value))
+                            }
+                          >
+                            {[24, 25, 30, 60].map((fps) => (
+                              <option key={fps} value={fps}>
+                                {fps} fps
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </Section>
+                  </>
+                )}
+                {!isMV && (
+                  <section className="advanced-section">
+                    <button
+                      type="button"
+                      className="advanced-toggle"
+                      aria-expanded={advanced}
+                      aria-controls="advanced-controls"
+                      onClick={() => setAdvanced(!advanced)}
                     >
-                      <option value="landscape">横16:9</option>
-                      <option value="portrait">縦9:16（Biim枠なし）</option>
-                    </select>
-                  </label>
-                  <div className="row">
-                    <label>
-                      出力解像度
-                      <select
-                        value={`${form.width}x${form.height}`}
-                        onChange={(e) => {
-                          const [width, height] = e.target.value
-                            .split("x")
-                            .map(Number);
-                          setForm((prev) => ({ ...prev, width, height }));
-                          changed();
-                        }}
-                      >
-                        {(portrait
-                          ? [
-                              [1080, 1920, "Full HD"],
-                              [720, 1280, "HD"],
-                              [2160, 3840, "4K"],
-                            ]
-                          : [
-                              [1920, 1080, "Full HD"],
-                              [1280, 720, "HD"],
-                              [3840, 2160, "4K"],
-                            ]
-                        ).map(([w, h, title]) => (
-                          <option key={`${w}x${h}`} value={`${w}x${h}`}>
-                            {title} · {w} × {h}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      フレームレート
-                      <select
-                        value={form.fps}
-                        onChange={(e) => field("fps", Number(e.target.value))}
-                      >
-                        {[24, 25, 30, 60].map((fps) => (
-                          <option key={fps} value={fps}>
-                            {fps} fps
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </Section>
-
-                <section className="advanced-section">
-                  <button
-                    type="button"
-                    className="advanced-toggle"
-                    aria-expanded={advanced}
-                    aria-controls="advanced-controls"
-                    onClick={() => setAdvanced(!advanced)}
-                  >
-                    <span>
-                      <Icon name="sliders" size={19} />
-                      <strong>演出と調査の詳細</strong>
-                      <small>ADVANCED</small>
-                    </span>
-                    <span>{advanced ? "−" : "+"}</span>
-                  </button>
-                  <div id="advanced-controls" hidden={!advanced}>
-                    <p className="section-intro">
-                      演出の強さと調査方針。数値でシーンを縛らず、方向性を渡します。
-                    </p>
-                    <div className="row">
-                      {select("tempo", "テンポ", [
-                        ["slow", "ゆっくり、理解を優先"],
-                        ["balanced", "緩急をつける"],
-                        ["fast", "テンポよく進める"],
-                      ])}
-                      {select("energy", "派手さ", [
-                        ["restrained", "控えめ"],
-                        ["balanced", "要所で強調"],
-                        ["bold", "大胆で華やか"],
-                      ])}
-                    </div>
-                    <div className="row">
-                      {select("motionAmount", "モーショングラフィックス量", [
-                        ["minimal", "必要なところに"],
-                        ["balanced", "バランスよく"],
-                        ["rich", "豊富に使う"],
-                      ])}
-                      {!fullScreen &&
-                        select("biimUsage", "Biimレイアウト使用率", [
-                          ["never", "使わない"],
-                          ["sometimes", "場面に応じて"],
-                          ["mostly", "主なレイアウトにする"],
-                        ])}
-                    </div>
-                    {select("characterUsage", "3Dキャラ登場頻度", [
-                      ["none", "登場させない"],
-                      ["occasional", "ときどき登場"],
-                      ["frequent", "頻繁に登場"],
-                    ])}
-                    <label>
-                      数式・図解・チャート方針
-                      <textarea
-                        rows={3}
-                        value={form.diagramPolicy}
-                        onChange={(e) => field("diagramPolicy", e.target.value)}
-                      />
-                    </label>
-                    <label className="check-label">
-                      <input
-                        type="checkbox"
-                        checked={form.allowWebResearch}
-                        onChange={(e) =>
-                          field("allowWebResearch", e.target.checked)
-                        }
-                      />
                       <span>
-                        追加のWeb調査を許可する
-                        <small>
-                          オフでも、提供した参考URLの直接参照は許可します。
-                        </small>
+                        <Icon name="sliders" size={19} />
+                        <strong>演出と調査の詳細</strong>
+                        <small>ADVANCED</small>
                       </span>
-                    </label>
-                    {select("evidencePolicy", "根拠資料の扱い", [
-                      ["primary", "一次資料を優先、出典を記録"],
-                      ["supplied-only", "提供資料の範囲で説明"],
-                      ["balanced", "提供資料と追加資料を照合"],
-                    ])}
-                  </div>
-                </section>
+                      <span>{advanced ? "−" : "+"}</span>
+                    </button>
+                    <div id="advanced-controls" hidden={!advanced}>
+                      <p className="section-intro">
+                        演出の強さと調査方針。数値でシーンを縛らず、方向性を渡します。
+                      </p>
+                      <div className="row">
+                        {select("tempo", "テンポ", [
+                          ["slow", "ゆっくり、理解を優先"],
+                          ["balanced", "緩急をつける"],
+                          ["fast", "テンポよく進める"],
+                        ])}
+                        {select("energy", "派手さ", [
+                          ["restrained", "控えめ"],
+                          ["balanced", "要所で強調"],
+                          ["bold", "大胆で華やか"],
+                        ])}
+                      </div>
+                      <div className="row">
+                        {select("motionAmount", "モーショングラフィックス量", [
+                          ["minimal", "必要なところに"],
+                          ["balanced", "バランスよく"],
+                          ["rich", "豊富に使う"],
+                        ])}
+                        {!fullScreen &&
+                          select("biimUsage", "Biimレイアウト使用率", [
+                            ["never", "使わない"],
+                            ["sometimes", "場面に応じて"],
+                            ["mostly", "主なレイアウトにする"],
+                          ])}
+                      </div>
+                      {select("characterUsage", "3Dキャラ登場頻度", [
+                        ["none", "登場させない"],
+                        ["occasional", "ときどき登場"],
+                        ["frequent", "頻繁に登場"],
+                      ])}
+                      <label>
+                        数式・図解・チャート方針
+                        <textarea
+                          rows={3}
+                          value={form.diagramPolicy}
+                          onChange={(e) =>
+                            field("diagramPolicy", e.target.value)
+                          }
+                        />
+                      </label>
+                      <label className="check-label">
+                        <input
+                          type="checkbox"
+                          checked={form.allowWebResearch}
+                          onChange={(e) =>
+                            field("allowWebResearch", e.target.checked)
+                          }
+                        />
+                        <span>
+                          追加のWeb調査を許可する
+                          <small>
+                            オフでも、提供した参考URLの直接参照は許可します。
+                          </small>
+                        </span>
+                      </label>
+                      {select("evidencePolicy", "根拠資料の扱い", [
+                        ["primary", "一次資料を優先、出典を記録"],
+                        ["supplied-only", "提供資料の範囲で説明"],
+                        ["balanced", "提供資料と追加資料を照合"],
+                      ])}
+                    </div>
+                  </section>
+                )}
                 <p className="editor-footnote">
                   <Icon name="shield" size={16} />
                   入力と添付ファイルはブラウザのメモリ内で処理されます。再読み込みすると消えます。
@@ -1409,7 +1601,7 @@ export default function App() {
                         </div>
                       )}
                       {preview === "files" && (
-                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${character ? "├─ character.glb" : "└─ (素材は任意)"}\n${form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (10 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
+                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${!isMV && character ? "├─ character.glb" : "└─ (素材は任意)"}\n${!isMV && form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${!isMV && bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}${isMV && music ? "│  └─ music" + music.name.slice(music.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (10 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
                       )}
                       {preview === "json" && (
                         <pre className="json-preview">
@@ -1425,7 +1617,13 @@ export default function App() {
                       <div>
                         <dt>尺の目安</dt>
                         <dd>
-                          {form.durationSec ? `${form.durationSec} sec` : "—"}
+                          {isMV
+                            ? form.musicDurationSec
+                              ? `${form.musicDurationSec.toFixed(2)} sec（音源）`
+                              : "音源を選択"
+                            : form.durationSec
+                              ? `${form.durationSec} sec`
+                              : "—"}
                         </dd>
                       </div>
                       <div>
@@ -1445,9 +1643,11 @@ export default function App() {
                       <div>
                         <dt>音声</dt>
                         <dd>
-                          {form.voiceEngine === "aivis"
-                            ? "AivisSpeech"
-                            : "なし"}
+                          {isMV
+                            ? music?.name || "完成音源未選択"
+                            : form.voiceEngine === "aivis"
+                              ? "AivisSpeech"
+                              : "なし"}
                         </dd>
                       </div>
                     </dl>
@@ -1535,7 +1735,7 @@ export default function App() {
                     <div className="runtime-tags">
                       <span>Remotion</span>
                       <span>React Three Fiber</span>
-                      <span>Aivis</span>
+                      <span>{isMV ? "Music Video" : "Aivis"}</span>
                     </div>
                   </div>
                 </div>
