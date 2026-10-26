@@ -183,6 +183,14 @@ npm run preview
 
 検証結果は[VERIFICATION.md](VERIFICATION.md)に記録しています。`validate`は構造検査であり、完成映像の目視・音声確認は制作工程で行います。`validate --final`は本番の制作記録と成果物がない動作確認用ジョブを拒否します。
 
+## ライセンス
+
+Copyright 2026 kokuren333
+
+本プロジェクトの独自コード・ドキュメント・ジョブテンプレートは、[Apache License 2.0](LICENSE)で公開しています。生成するジョブZIPにもライセンス全文を同梱します。
+
+同梱フォントはSIL Open Font License 1.1で提供され、権利表示とライセンス全文を[job-template/assets/fonts/](job-template/assets/fonts/)に保持しています。依存パッケージ、Aivis音声モデル、ユーザーが添付する素材には、それぞれのライセンス・利用条件が適用されます。
+
 ## GitHub Pages・参考
 
 公開リポジトリは[BiimMotionWebUI](https://github.com/kokuren333/BiimMotionWebUI)、公開先は[GitHub Pages](https://kokuren333.github.io/BiimMotionWebUI/)です。[Pagesワークフロー](.github/workflows/pages.yml)がmainへのpushでテスト・ビルド・デプロイを行います。PRではテストとビルドを行います。PagesのSourceには「GitHub Actions」を指定します。

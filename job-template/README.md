@@ -165,6 +165,11 @@ generate_bgm_seがtrueなら、場面に合う簡単な音を制作。添付BGM�
 `npm run sound`でassets/audio/sound-design.jsonと各WAVを生成し、MainVideoがシーンに同期して再生する。時間単位は秒、volumeは0〜1。音は決定的な手続き生成で、外部APIは不要。高度な作曲・音声生成モデルを同梱するものではない。BGMのnotesはHz。短いBGMを`loop: true`と`play_duration_sec`で指定秒数まで繰り返せる。添付BGMは全体にループ。ナレーションありでも動くがダッキングは必要に応じてエージェントが追加する。
 
 ## 条件と参考元
+
+Copyright 2026 kokuren333
+
+同梱するBiimMakerWebUI由来の独自コード・ドキュメント・ジョブテンプレートは、[Apache License 2.0](LICENSE)で提供する。同梱フォントはSIL Open Font License 1.1で提供し、権利表示とライセンス全文はassets/fonts/に保持する。依存パッケージ、音声モデル、ユーザーが添付する素材にはそれぞれのライセンス・利用条件が適用される。
+
 Remotionの利用条件: https://www.remotion.dev/license 。Aivisエンジンや各音声モデル、添付素材の利用条件も確認する。
 WebUI構成の参考: https://github.com/kokuren333/BookOrderWebUI
 Aivis APIとBiim制作方針の参考: https://github.com/kokuren333/BiimSlideMaker
