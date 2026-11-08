@@ -12,6 +12,7 @@
     "validate": "node scripts/validate.mjs",
     "voice": "node scripts/aivis.mjs",
     "sound": "node scripts/sound-design.mjs",
+    "imagegen": "node scripts/imagegen.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
