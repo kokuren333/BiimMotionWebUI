@@ -13,6 +13,7 @@ cd runtime
 npm run studio         # インタラクティブなRemotion Studio
 npm run voice          # plan/narration.json → WAV・発話単位の字幕・実測尺
 npm run sound          # plan/sound-design.json → 簡単なBGM / SE WAV
+npm run imagegen -- --name bg --prompt "…"  # Codex CLI + imagegen → assets/generated/bg.png
 npm run validate       # 設定・ファイル・音声タイミング・型チェック
 npm run preview        # output/preview.mp4（低解像度・全尺）
 npm run still -- --frame=30  # output/preview.png
@@ -31,6 +32,8 @@ MVでは`audio.music`の完成音源、`direction.music_mood`の曲の雰囲気�
 
 `plan/music-analysis.md`に曲の展開・ビート・フレーズ・感情・演出方針を記録し、`plan/storyboard.md`に時刻ごとの映像構成を記録します。project.scenesには場面のid・duration_sec・summaryを記録し、scenes/index.tsxを実際のMV構成に変更します。MVではscript・dialogue・note_top・note_bottomは必須ではありません。歌詞は提供された内容だけを使用し、表示する場合は楽曲の時刻に合わせて独自に実装します。
 
+MVの制作原則（思想先的設計、歌詞の視覚化、密度と変化率、強調と抑制、スタイルの一貫性、検証ループ、失敗パターン）と、方向性3案→スタイル定義の手順はAGENTS.mdにあります。`plan/direction.md`に方向性の3案・採用案・スタイル定義を記録し、`direction.differentiation`の差別化メモを考慮します。最終検査ではMVの`plan/direction.md`も確認します。
+
 WebUIでは01〜03で入力し、04・05・演出と調査の詳細は非表示です。追加Web調査は無効で、提供資料と参考URLを利用します。完成後は通常動画と同じくvalidate・preview・映像音響QA・build・validate --finalを実行します。最終検査の台本記録はMVではplan/music-analysis.mdになります。
 
 ## 解説動画のBiimSlideMaker互換の場面テキスト
@@ -44,6 +47,18 @@ project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕�
 `runtime/src/BiimScene.tsx`にsceneを渡すとnote_top / note_bottomを配置します。そのchildrenが中央の自由なRemotion映像、characterがキャラの初期配置です。キャラはこの領域を越えて動かせます。plan/narration.jsonのsegmentsを空にして`npm run voice`を実行すると、scenes[].scriptから句点ごとの読み上げと字幕を生成します。音声出力のscene_idと実測秒を使って各Sequenceを同期してください。個別の開始時刻が必要ならnarration.jsonで上書きします。
 
 同梱の`biim-standard-v1`（project.layout）、枠SVG、Noto Sans JP（本文・ノート）、M PLUS Rounded 1c ExtraBold（字幕）が標準です。枠は背景#1e1e1e・枠線#cccccc、ノートは白系、字幕は1人目が青、2人目が赤＋白9pxの縁取りを既定とし、話者ごとの指定色を使用します。Fontsコンポーネントが明示的にファイルを読み込み、完了までレンダリングを待ちます。フォント欠損はエラーにします。標準コンポーネントを使う限り同じ枠・書体を使えます。フォントの権利表示とOFL全文はassets/fonts/にあります。独自の演出を作る場合もBiim場面の枠・書体を揃えてください。
+
+## 画像素材の生成（Codex CLI + imagegen）
+
+`project.asset_generation.image`が`"codex-imagegen"`なら、背景・透過素材・キャラシート・モーション素材などを次のように生成できます。runtimeでは`npm run imagegen -- …`、ジョブのルートでも同じコマンドが使えます。
+
+```sh
+npm run imagegen -- --name hero-sheet --kind character-sheet --prompt "主人公のキャラシート"
+npm run imagegen -- --name hero-run --kind motion --ref assets/generated/hero-sheet.png --prompt "走る4ポーズ"
+npm run imagegen -- --help
+```
+
+`codex exec`をサブプロセスで起動してimagegen skillで生成させ、`assets/generated/<name>.png`（既存なら`-v2`等）に保存したPNGを確認して`assets/generated/manifest.json`に記録します。`plan/style-sheet.md`があればプロンプトに含めます。Codexがない・失敗した場合は終了コード0で素材なしのまま続行し、manifestに理由を残します（`--strict`で失敗扱い）。`CODEX_BIN`で実行ファイルを変更できます。動画生成AIは`asset_generation.video_generation`がtrueか、ユーザーが明示的に希望した場合だけ使います。
 
 ## キャラクター・全画面・縦動画
 
@@ -135,7 +150,7 @@ export const CharacterMotionExample = ({ scene }: { scene: BiimSceneData }) => {
 - sources/: 資料。ファイル名の重複は解消している。URLはproject.jsonに記録するだけで未取得。
 - assets/: GLB、添付BGM、音声・SEなど。runtimeの各コマンドがruntime/public/assetsへ同期し、staticFile('assets/…')で使用する。編集元はassets/。public内のコピーは直接編集しない。
 - scenes/: シーンのReact/TSX。設計は自由。index.tsxでメイン映像と全体尺をexportする。
-- motion-kit/: 任意使用の10コンポーネント。Character3DはGLBのフィット・アニメーションのフレーム同期を補助する。口パク・リターゲットはモデルに合わせて追加実装する。
+- motion-kit/: 任意使用の12コンポーネント（lyric-fit.tsの補助関数を含む）。LyricLineは秒指定の行単位歌詞（末尾まで保持・幅に収める）、LyricPunchは語ごとのタイムスタンプで打ち込む巨大歌詞（構図領域を指定）。既定値のまま作品の見た目にせず調整する。Character3DはGLBのフィット・アニメーションのフレーム同期を補助する。口パク・リターゲットはモデルに合わせて追加実装する。
 - plan/: 台本、ストーリーボード、ナレーション、音響プラン、出典。
 - reports/: 視覚・音響QAと納品レポート。output/: preview / final。
 

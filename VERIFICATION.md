@@ -1,5 +1,14 @@
 # Verification — 2026-10-06
 
+## Design-first MV principles, diversity and Codex imagegen (2026-11-09)
+
+- `npm test`: 19 tests passed (13 existing + 6 new). New coverage: direction candidates differ on every axis, are deterministic per seed and vary across seeds; lyric stats (lines, section tags, blocks, long lines); MV brief/project carry the differentiation memo, `plan/direction.md`, the quality checklist and `asset_generation` (image generation on, video generation off by default, both switchable); the shipped AGENTS.md contains the design-first principles, 3-direction diversity step, lyric visualisation, character sheet / anti-slop consistency, optional layer approach, video generation off by default, the verification loop and failure checklist; the imagegen wrapper and new motion-kit files are packaged. The motion-kit count assertion moved from 10 to 12.
+- `tests/imagegen.test.ts` drives `runtime/scripts/imagegen.mjs` with a fake Codex (`CODEX_BIN`): PNG saved and verified, `-v2` versioning instead of overwrite, reference images passed as `-i`, `plan/style-sheet.md` injected into the prompt, manifest records; missing Codex, non-zero exit and "finished but no file" all return `skipped` without stopping, and unsafe names/paths are rejected.
+- Real run: `npm run imagegen -- --name verify-paper --kind texture …` in the extracted MV fixture on Windows invoked `codex exec` (codex-cli 0.160.0), which used the imagegen skill and saved a 640×360-aspect PNG at `assets/generated/verify-paper.png`; the wrapper verified it and recorded `status: ok`. No other job files were modified. `npm run validate` then passed including the generated-asset manifest check.
+- Regenerated the `--mv` fixture: runtime validation including TypeScript passed with the new `LyricLine`, `LyricPunch` and `lyric-fit`. Rendered stills of a temporary demo scene (640×360): LyricPunch stacked three timed words inside the left region beside a right-side placeholder; LyricLine shrank a long two-line phrase to fit the frame width. The demo scene was not kept in the template.
+- Browser check (built site in headless Chrome, 1440px): MV mode shows the "MVで表現したいこと" label, lyric stats chips with the long-line warning, three direction candidates with "この案を追記" / "別の組み合わせ", axis hints, the differentiation memo, asset-generation toggles, the MV readiness list and the failure-pattern checklist.
+- `npm run build -- --base=/BiimMotionWebUI/` and `git diff --check` passed. This checks the harness and helpers, not the artistic quality of a produced MV.
+
 ## MV mode (2026-10-06)
 
 - `npm test`: 13 tests passed. New MV coverage checks mode-specific prompt restoration, required/valid completed audio, size limits, exact music bytes, lyric text/newline preservation in project.json and plan/lyrics.txt, forced fullscreen/no Biim, disabled Aivis and extra audio, and exclusion of inactive BGM/GLB assets.
