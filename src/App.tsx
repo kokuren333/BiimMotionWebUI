@@ -23,6 +23,13 @@ import {
   type MotionForm,
 } from "./job";
 import { loadTemplates } from "./templates";
+import {
+  directionAxes,
+  directionCandidates,
+  formatCandidate,
+  lyricStats,
+  mvQualityChecklist,
+} from "./mv-assist";
 
 function Icon({
   name,
@@ -191,6 +198,10 @@ export default function App() {
   const [preview, setPreview] = useState<"layout" | "files" | "json">("layout");
   const [advanced, setAdvanced] = useState(false);
   const [info, setInfo] = useState(false);
+  const [directionSeed, setDirectionSeed] = useState(() =>
+    Math.floor(Math.random() * 2 ** 31),
+  );
+  const [addedCandidate, setAddedCandidate] = useState<number | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const isMV = form.videoMode === "mv";
@@ -232,10 +243,31 @@ export default function App() {
   const project = createProject(form, assets);
   const fullScreen = usesFullScreen(form);
   const portrait = form.height > form.width;
+  const lyrics = lyricStats(form.musicLyrics);
+  const candidates = directionCandidates(directionSeed);
+  const conceptReady = Boolean(
+    form.title.trim() && form.description.trim() && form.audience.trim(),
+  );
+  const mvReadiness: [string, boolean, string][] = [
+    ["タイトル・表現したいこと・視聴者", conceptReady, "必須"],
+    [
+      "完成音源",
+      Boolean(music && form.musicDurationSec),
+      form.musicDurationSec
+        ? `${form.musicDurationSec.toFixed(1)}秒`
+        : "必須",
+    ],
+    ["曲の雰囲気・世界観", Boolean(form.musicMood.trim()), "推奨"],
+    [
+      "歌詞",
+      lyrics.lines > 0,
+      lyrics.lines ? `${lyrics.lines}行` : "任意",
+    ],
+    ["デザイン方向性", Boolean(form.design.trim()), "推奨"],
+    ["差別化メモ", Boolean(form.differentiation.trim()), "任意"],
+  ];
   const completed = [
-    Boolean(
-      form.title.trim() && form.description.trim() && form.audience.trim(),
-    ),
+    isMV ? conceptReady && Boolean(music && form.musicDurationSec) : conceptReady,
     sources.length > 0 ||
       urlLines(form.urls).length > 0 ||
       Boolean(form.instructions.trim()),
@@ -594,14 +626,24 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    何を説明する動画か <em>必須</em>
+                    {isMV ? "MVで表現したいこと" : "何を説明する動画か"}{" "}
+                    <em>必須</em>
                     <textarea
                       required
                       rows={4}
                       value={form.description}
                       onChange={(e) => field("description", e.target.value)}
-                      placeholder="扱うテーマ、伝えたい結論、見終わった後に理解してほしいこと。"
+                      placeholder={
+                        isMV
+                          ? "この曲で何を表現したいか。茶化したい、怒りをぶつけたい、懐かしさを残したい、とにかく楽しませたい等。見終わった後に残したい感情。"
+                          : "扱うテーマ、伝えたい結論、見終わった後に理解してほしいこと。"
+                      }
                     />
+                    {isMV && (
+                      <small>
+                        何を表現するかが先、作り方は後。演出の判断基準になります。
+                      </small>
+                    )}
                   </label>
                   <div className="row concept-row">
                     <label>
@@ -660,6 +702,35 @@ export default function App() {
                         <small>
                           原文と改行を保存し、歌詞の表示・タイポグラフィ演出に使用します。
                         </small>
+                        {lyrics.lines > 0 && (
+                          <span className="lyric-stats" role="status">
+                            <span>{lyrics.lines}行</span>
+                            <span>{lyrics.blocks}ブロック</span>
+                            <span>
+                              見出し{" "}
+                              {lyrics.sections.length
+                                ? lyrics.sections.slice(0, 6).join(" ") +
+                                  (lyrics.sections.length > 6 ? " …" : "")
+                                : "なし"}
+                            </span>
+                            <span className={lyrics.longLines ? "warn" : ""}>
+                              最長 {lyrics.longest}文字
+                              {lyrics.longLines
+                                ? `（20文字超 ${lyrics.longLines}行）`
+                                : ""}
+                            </span>
+                          </span>
+                        )}
+                        {lyrics.lines > 0 && (
+                          <small>
+                            {lyrics.sections.length
+                              ? "見出しは楽曲分析の手がかりになります（実際の時刻は音源で確認します）。"
+                              : "[Verse] [サビ] などの見出しを行に書くと、構成の手がかりになります。"}
+                            {lyrics.longLines
+                              ? " 長い行は、表示時に改行位置と文字サイズを設計します。"
+                              : ""}
+                          </small>
+                        )}
                       </label>
                       <div className="asset-picker">
                         <span className="asset-icon music">♫</span>
@@ -779,7 +850,7 @@ export default function App() {
                   <div className="direction-tags" aria-hidden="true">
                     <span>{fullScreen ? "Full screen" : "Biim layout"}</span>
                     <span>Motion graphics</span>
-                    <span>3D character</span>
+                    <span>{isMV ? "Lyric typography" : "3D character"}</span>
                   </div>
                   <label className="check-label layout-switch">
                     <input
@@ -823,6 +894,122 @@ export default function App() {
                       1c。枠・フォントは同梱します。
                     </small>
                   )}
+                  {isMV && (
+                    <div className="direction-lab">
+                      <div className="direction-lab-heading">
+                        <div>
+                          <strong>方向性のたたき台</strong>
+                          <small>
+                            固定のプリセットではなく、6つの軸を毎回組み替えた候補です。曲に合う要素だけ拾い、デザイン方向性へ追記できます。
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => {
+                            setDirectionSeed(
+                              (seed) => (seed * 48271 + 11) % 2147483647,
+                            );
+                            setAddedCandidate(null);
+                          }}
+                        >
+                          別の組み合わせ
+                        </button>
+                      </div>
+                      <div className="candidate-grid">
+                        {candidates.map((candidate, i) => (
+                          <article className="candidate-card" key={i}>
+                            <span className="candidate-label">
+                              案 {String.fromCharCode(65 + i)}
+                            </span>
+                            <dl>
+                              {directionAxes.map((axis) => (
+                                <div key={axis.key}>
+                                  <dt>{axis.label}</dt>
+                                  <dd>{candidate[axis.key]}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                            <button
+                              type="button"
+                              className="ghost-button"
+                              onClick={() => {
+                                const current = form.design.trim();
+                                field(
+                                  "design",
+                                  [current, formatCandidate(candidate)]
+                                    .filter(Boolean)
+                                    .join("\n"),
+                                );
+                                setAddedCandidate(i);
+                              }}
+                            >
+                              {addedCandidate === i
+                                ? "追記しました"
+                                : "この案を追記"}
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                      <details className="axis-hints">
+                        <summary>変化の軸と考え方</summary>
+                        <ul>
+                          {directionAxes.map((axis) => (
+                            <li key={axis.key}>
+                              <strong>{axis.label}</strong> {axis.hint}
+                            </li>
+                          ))}
+                        </ul>
+                        <small>
+                          制作時もOpusが曲ごとに3案を作って選び、前作や過去事例の組み合わせをそのまま踏襲しないようにします。
+                        </small>
+                      </details>
+                      <label>
+                        差別化メモ（任意）
+                        <textarea
+                          rows={3}
+                          value={form.differentiation}
+                          onChange={(e) =>
+                            field("differentiation", e.target.value)
+                          }
+                          placeholder="前作と変えたい点、似せたくない作品、避けたい表現。例：前作はピンクの高速タイポだったので、今回は余白の多いモノクロにする。"
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <fieldset className="asset-options">
+                    <legend>素材の生成</legend>
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={form.imageGeneration}
+                        onChange={(e) =>
+                          field("imageGeneration", e.target.checked)
+                        }
+                      />
+                      <span>
+                        画像素材をCodex CLI + imagegenで生成する
+                        <small>
+                          背景・透過素材・キャラシートなどが必要な場面で使用します。Codexがない環境では素材なしで進めます。
+                        </small>
+                      </span>
+                    </label>
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={form.videoGeneration}
+                        onChange={(e) =>
+                          field("videoGeneration", e.target.checked)
+                        }
+                      />
+                      <span>
+                        動画生成AI（Seedance等）の使用を許可する
+                        <small>
+                          既定はオフ。オンにした場合だけ、必要な場面の素材として使えます。
+                        </small>
+                      </span>
+                    </label>
+                  </fieldset>
                   <div className="creative-note">
                     <span>↗</span>
                     <p>
@@ -1601,7 +1788,7 @@ export default function App() {
                         </div>
                       )}
                       {preview === "files" && (
-                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${!isMV && character ? "├─ character.glb" : "└─ (素材は任意)"}\n${!isMV && form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${!isMV && bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}${isMV && music ? "│  └─ music" + music.name.slice(music.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (10 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
+                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${!isMV && character ? "├─ character.glb" : "└─ (素材は任意)"}\n${!isMV && form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${!isMV && bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}${isMV && music ? "│  └─ music" + music.name.slice(music.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (12 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
                       )}
                       {preview === "json" && (
                         <pre className="json-preview">
@@ -1663,6 +1850,19 @@ export default function App() {
                       <br />
                       ランタイムをひとつのZIPに。
                     </p>
+                    {isMV && (
+                      <ul className="readiness" aria-label="MV入力の状況">
+                        {mvReadiness.map(([label, done, note]) => (
+                          <li key={label} className={done ? "done" : ""}>
+                            <span className="readiness-mark">
+                              {done ? <Icon name="check" size={12} /> : null}
+                            </span>
+                            {label}
+                            <small>{note}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="export-meta">
                       <span className={valid ? "ready" : ""}>
                         <span className="status-dot" />
@@ -1732,6 +1932,19 @@ export default function App() {
                       </button>
                     </div>
                     <small role="status">{copyStatus}</small>
+                    {isMV && (
+                      <details className="quality-checklist">
+                        <summary>previewで確認する失敗パターン</summary>
+                        <ul>
+                          {mvQualityChecklist.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                        <small>
+                          指摘は「時刻・問題・期待する改善」をセットで伝えると、良い部分を壊さずに直せます。
+                        </small>
+                      </details>
+                    )}
                     <div className="runtime-tags">
                       <span>Remotion</span>
                       <span>React Three Fiber</span>
@@ -1785,7 +1998,7 @@ export default function App() {
         <h3>同梱するもの</h3>
         <p>
           制作指示、JSON設定、ブリーフ、添付資料、最小Remotion / React /
-          Three.jsプロジェクト、Aivisラッパー、字幕・BGMの再生口、10個のmotion-kitコンポーネント、preview
+          Three.jsプロジェクト、Aivisラッパー、字幕・BGMの再生口、Codex imagegenラッパー、12個のmotion-kitコンポーネント、preview
           / build /
           validateコマンド。依存パッケージやNode.js、Aivisエンジン、3Dモデルは自動で同梱しません。
         </p>

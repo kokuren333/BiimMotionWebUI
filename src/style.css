@@ -1791,3 +1791,178 @@ dialog a {
     grid-template-columns: 1fr;
   }
 }
+
+/* MV assistance: direction candidates, lyric stats, readiness, checklist */
+.ghost-button {
+  font-size: 10px;
+  font-weight: 500;
+  background: white;
+  border: 1px solid #dbe2d1;
+  border-radius: 5px;
+  padding: 6px 11px;
+  color: #687a59;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ghost-button:hover {
+  border-color: #b8c7a5;
+  background: #f8faf3;
+}
+.lyric-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.lyric-stats span {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f3f6eb;
+  color: #5f7350;
+}
+.lyric-stats span.warn {
+  background: #fbf1df;
+  color: #8a6420;
+}
+.direction-lab {
+  margin-top: 20px;
+  border: 1px solid #e6ebdc;
+  border-radius: 8px;
+  background: #fbfcf8;
+  padding: 16px;
+}
+.direction-lab-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.direction-lab-heading strong {
+  display: block;
+  font-size: 12px;
+}
+.direction-lab-heading small {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.candidate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 12px;
+}
+.candidate-label {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: #8b9a77;
+  font-weight: 600;
+}
+.candidate-card dl {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  flex: 1;
+}
+.candidate-card dt {
+  font-size: 9px;
+  color: var(--muted);
+}
+.candidate-card dd {
+  margin: 1px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.candidate-card .ghost-button {
+  align-self: flex-start;
+}
+.axis-hints {
+  margin-top: 12px;
+  font-size: 11px;
+}
+.axis-hints summary,
+.quality-checklist summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: #657858;
+}
+.axis-hints ul,
+.quality-checklist ul {
+  margin: 8px 0 6px;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+.axis-hints small,
+.quality-checklist small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+.asset-options {
+  margin: 20px 0 0;
+  padding: 4px 14px 12px;
+  border: 1px solid #e6ebdc;
+  border-radius: 8px;
+  min-width: 0;
+}
+.asset-options legend {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+.asset-options .check-label {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.readiness {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.readiness li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.readiness li.done {
+  color: var(--ink);
+}
+.readiness small {
+  margin-left: auto;
+  font-size: 9px;
+}
+.readiness-mark {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid #cfd8c3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.readiness li.done .readiness-mark {
+  background: var(--accent);
+  border-color: #b9cf86;
+  color: var(--green);
+}
+.quality-checklist {
+  margin-top: 14px;
+  font-size: 11px;
+}
