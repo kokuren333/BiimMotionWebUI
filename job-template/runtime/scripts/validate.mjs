@@ -108,6 +108,14 @@ if (project) {
       project.audio.music,
     ].filter(Boolean))
       await fs.access(localPath(asset));
+    let generated;
+    try {
+      generated = await readJSON("assets/generated/manifest.json");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    for (const entry of generated?.assets ?? [])
+      if (entry.status === "ok") await fs.access(localPath(entry.path));
   });
   await check("audio manifests", async () => {
     for (const name of ["narration", "sound-design"]) {
@@ -189,7 +197,9 @@ if (process.argv.includes("--final")) {
     for (const segment of project.mode === "mv" ? [] : sceneSegments(project))
       narrationSpeaker(project, segment);
     for (const file of [
-      project.mode === "mv" ? "plan/music-analysis.md" : "plan/script.md",
+      ...(project.mode === "mv"
+        ? ["plan/music-analysis.md", "plan/direction.md"]
+        : ["plan/script.md"]),
       "plan/storyboard.md",
       "plan/sources.md",
       "reports/visual-qa.md",

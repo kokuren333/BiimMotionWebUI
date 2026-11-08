@@ -17,6 +17,13 @@ import {
   type MotionForm,
   type TemplateFiles,
 } from "../src/job.ts";
+import {
+  directionAxes,
+  directionCandidates,
+  formatCandidate,
+  lyricStats,
+  mvQualityChecklist,
+} from "../src/mv-assist.ts";
 import { synthesizeCue } from "../job-template/runtime/scripts/sound-design.mjs";
 import { wavDuration } from "../job-template/runtime/scripts/lib.mjs";
 
@@ -368,7 +375,7 @@ test("ZIP includes the runtime, exact attachment bytes, Japanese brief, and audi
       (file) =>
         file.startsWith(prefix + "motion-kit/") && file.endsWith(".tsx"),
     ).length,
-    10,
+    12,
   );
 });
 
@@ -630,4 +637,109 @@ test("duo ZIP packages two separate GLBs; solo omits the inactive second model a
   assert.ok(
     validateForm({ ...form, characterMode: "duo" }, invalid).length >= 2,
   );
+});
+
+test("MV direction candidates differ on every axis and change with the seed", () => {
+  const candidates = directionCandidates(42);
+  assert.equal(candidates.length, 3);
+  for (const axis of directionAxes) {
+    const values = candidates.map((candidate) => candidate[axis.key]);
+    assert.equal(new Set(values).size, 3, axis.key);
+    values.forEach((value) => assert.ok(axis.options.includes(value)));
+  }
+  assert.deepEqual(directionCandidates(42), candidates);
+  const seen = new Set(
+    Array.from({ length: 8 }, (_, seed) =>
+      JSON.stringify(directionCandidates(seed + 1)),
+    ),
+  );
+  assert.ok(seen.size > 6);
+  assert.match(formatCandidate(candidates[0]), /配色=.+ \/ タイポグラフィ=/);
+  assert.ok(mvQualityChecklist.some((item) => item.includes("末尾")));
+});
+
+test("lyric stats count lines, section tags, blocks and long lines", () => {
+  const stats = lyricStats(
+    "[Verse]\n夜の街へ\n光を探して\n\n【サビ】\nこの長い長い長い長い長い長い行は二十文字を超えています\n",
+  );
+  assert.equal(stats.lines, 3);
+  assert.deepEqual(stats.sections, ["[Verse]", "【サビ】"]);
+  assert.equal(stats.blocks, 2);
+  assert.equal(stats.longLines, 1);
+  assert.ok(stats.longest > 20);
+  assert.equal(lyricStats("").lines, 0);
+});
+
+test("MV brief and AGENTS carry design-first principles, diversity steps and asset policy", async () => {
+  const current = {
+    ...switchVideoMode(form, "mv"),
+    musicLyrics: "[サビ]\n光の向こうへ",
+    musicDurationSec: 6.25,
+    differentiation: "前作のピンクは使わない",
+  };
+  assert.match(current.design, /構造的な変化/);
+  assert.match(current.design, /キャラ・背景の居場所/);
+  const music = { name: "a.wav", type: "audio/wav", size: 4, data: new Uint8Array([1, 2, 3, 4]) };
+  const project = createProject(current, { sources: [], music });
+  assert.equal(project.direction.differentiation, "前作のピンクは使わない");
+  assert.deepEqual(
+    { image: project.asset_generation.image, video: project.asset_generation.video_generation },
+    { image: "codex-imagegen", video: false },
+  );
+  const brief = createBrief(current, { sources: [], music });
+  assert.match(brief, /plan\/direction\.md/);
+  assert.match(brief, /前作のピンクは使わない/);
+  assert.match(brief, /Codex CLI \+ imagegen/);
+  assert.match(brief, /動画生成AI（Seedance等）: 使用しない/);
+  assert.match(brief, /歌詞の末尾が場面転換で飛ばされていない/);
+  assert.match(brief, /1行 \/ 1ブロック \/ セクション見出し \[サビ\]/);
+  const optedIn = createBrief(
+    { ...current, videoGeneration: true, imageGeneration: false },
+    { sources: [], music },
+  );
+  assert.match(optedIn, /ユーザーが使用を許可/);
+  assert.match(optedIn, /画像素材の生成: 行わない/);
+  assert.equal(
+    createProject({ ...current, imageGeneration: false }, { sources: [], music })
+      .asset_generation.image,
+    "off",
+  );
+  assert.match(createBrief(form, empty), /## 素材生成/);
+  assert.match(agentPromptFor("mv"), /方向性を3案/);
+  assert.match(agentPromptFor("mv"), /imagegen/);
+  assert.equal(
+    validateForm({ ...current, description: "" }, { sources: [], music })[0],
+    "MVで表現したいことを入力してください。",
+  );
+
+  const zip = await JSZip.loadAsync(
+    (await generateJob(current, { sources: [], music }, await loadTemplates())).data,
+  );
+  const prefix = current.title + "/";
+  const agents = await zip.file(prefix + "AGENTS.md")!.async("string");
+  for (const pattern of [
+    /思想先的設計/,
+    /方向性を\*\*3案\*\*/,
+    /配色 \/ タイポグラフィ様式 \/ モーションの言語 \/ 構図 \/ 質感 \/ テンポ感/,
+    /キャラシート/,
+    /AI slop/,
+    /既定では使わない/,
+    /npm run imagegen/,
+    /時刻・問題・期待する改善/,
+    /歌詞の末尾が飛ばされる/,
+    /表現手法を禁止・固定するものではない/,
+    /場面に合う簡単なBGMとSE/,
+  ])
+    assert.match(agents, pattern);
+  for (const file of [
+    "runtime/scripts/imagegen.mjs",
+    "motion-kit/LyricLine.tsx",
+    "motion-kit/LyricPunch.tsx",
+    "motion-kit/lyric-fit.ts",
+  ])
+    assert.ok(zip.file(prefix + file), file);
+  const runtimePackage = JSON.parse(
+    await zip.file(prefix + "runtime/package.json")!.async("string"),
+  );
+  assert.equal(runtimePackage.scripts.imagegen, "node scripts/imagegen.mjs");
 });
