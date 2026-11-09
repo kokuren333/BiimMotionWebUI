@@ -16,6 +16,7 @@ import {
   wavDuration,
 } from "./lib.mjs";
 import { sceneSegments } from "./aivis.mjs";
+import { analyzeGhosts } from "./ghost-check.mjs";
 
 const require = createRequire(import.meta.url);
 const errors = [];
@@ -25,6 +26,15 @@ const check = async (label, fn) => {
     console.log("OK " + label);
   } catch (error) {
     errors.push(label + ": " + error.message);
+  }
+};
+// Advisory checks report findings but never fail validation: they surface
+// quality risks (e.g. render ghosts) for a human/agent to judge in context.
+const advise = async (label, fn) => {
+  try {
+    await fn();
+  } catch (error) {
+    console.log("SKIP " + label + ": " + error.message);
   }
 };
 let project;
@@ -228,6 +238,42 @@ if (process.argv.includes("--final")) {
         await handle.close();
       }
     }
+  });
+  // Render ghosts (deleted text flashing back for one frame from a stale
+  // Chrome compositing layer) survive every structural check above and are
+  // not caught by a plain flicker metric, so scan final.mp4 frame by frame.
+  // Advisory only: findings go to reports/ghost-check.md and never fail the
+  // build — intentional 1-frame accents exist and stay a creative choice.
+  // --double-render additionally renders the same code again and reports
+  // every frame where the two renders disagree.
+  await advise("ghost scan (advisory)", async () => {
+    const result = await analyzeGhosts({
+      doubleRender: process.argv.includes("--double-render"),
+    });
+    if (result.skipped) {
+      console.log("SKIP ghost scan: " + result.skipped);
+      return;
+    }
+    const events = result.singleFrameEvents;
+    console.log(
+      `GHOST single-frame events in final.mp4: ${events.length}` +
+        (events.length
+          ? " (" +
+            events
+              .slice(0, 10)
+              .map((event) => event.time)
+              .join(", ") +
+            ")"
+          : ""),
+    );
+    if (result.doubleRender)
+      console.log(
+        `GHOST double-render mismatches: ${result.doubleRender.mismatches.length} frames`,
+      );
+    if (events.length || result.doubleRender?.mismatches.length)
+      console.log(
+        "GHOST details recorded in reports/ghost-check.md — confirm flagged frames with stills before delivery.",
+      );
   });
 }
 if (errors.length) {

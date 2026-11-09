@@ -19,6 +19,8 @@ npm run preview        # output/preview.mp4（低解像度・全尺）
 npm run still -- --frame=30  # output/preview.png
 npm run build          # output/final.mp4（指定解像度 H.264/AAC）
 npm run validate -- --final # 成果物・シーン目録・QA記録の検査
+npm run ghost-check    # final.mp4のレンダーゴースト走査（1フレーム要素の検出）
+npm run ghost-check -- --double-render # 同一コードでもう1本レンダーして全フレーム照合
 ```
 
 `npm install`でジョブルートにpackage-lock.jsonが作られたら、以降はそのルートで`npm ci`を実行して環境を再現できます。Aivisを使う場合は、project.jsonで指定したエンジンURLとStyle IDを制作するPCで利用できるようにします。「音声合成なし」のジョブでは音声合成工程を省略します。
