@@ -10,6 +10,7 @@ import project from "../../project.json";
 import narration from "../data/narration.json";
 import sound from "../data/sound-design.json";
 import { SceneTimeline } from "../../scenes";
+import { stageRootStyle } from "../../motion-kit/layers";
 import { Captions } from "./Captions";
 import { sceneUsesBiim } from "./Presentation";
 import { musicVideo } from "./Music";
@@ -34,6 +35,10 @@ export const MainVideo = () => {
   return (
     <AbsoluteFill
       style={{
+        // Stage root stacking context: keeps scene, lyric and overlay
+        // compositing layers separable (render-ghost prevention, see
+        // motion-kit/layers.ts).
+        ...stageRootStyle,
         containerType: "inline-size",
         backgroundColor: project.layout.colors.background,
         fontFamily: project.layout.fonts.body.family,

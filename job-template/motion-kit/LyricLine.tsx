@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { fitFontSize } from "./lyric-fit";
+import { lyricLayerStyle } from "./layers";
 
 /**
  * One lyric line (or a designed multi-line phrase) timed in seconds relative to
@@ -55,6 +56,9 @@ export const LyricLine = ({
     <div
       aria-label={text}
       style={{
+        // Own compositing layer: a removed line must not ghost back from a
+        // stale shared layer in the render tab (see layers.ts).
+        ...lyricLayerStyle,
         fontSize: size,
         lineHeight: 1.25,
         whiteSpace: "pre",

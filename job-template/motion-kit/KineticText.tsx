@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { textLayerStyle } from "./layers";
 export const KineticText = ({
   text,
   delay = 0,
@@ -14,7 +15,10 @@ export const KineticText = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   return (
-    <div style={style} aria-label={text}>
+    <div
+      style={{ ...textLayerStyle, ...style }}
+      aria-label={text}
+    >
       {Array.from(text).map((letter, i) => {
         const local = frame - delay - i * stagger;
         const p = spring({ frame: local, fps, config: { damping: 15 } });

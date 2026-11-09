@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AbsoluteFill, Img, staticFile, useVideoConfig } from "remotion";
 import project from "../project.json";
+import { stageRootStyle, textLayerStyle } from "./layers";
 import { biimEnabled, regionsFor } from "../runtime/src/Presentation";
 
 export const BiimOverlay = ({
@@ -34,6 +35,9 @@ export const BiimOverlay = ({
     height: `${(values[3] / layout.base_height) * 100}%`,
   });
   const noteStyle = (role: "note_top" | "note_bottom"): CSSProperties => ({
+    // Notes are text overlays: keep them on their own compositing layer,
+    // separate from the scene below (see layers.ts).
+    ...textLayerStyle,
     ...region(layout.regions[role]),
     overflow: "hidden",
     whiteSpace: "pre-line",
@@ -55,8 +59,8 @@ export const BiimOverlay = ({
       <div
         style={
           enabled
-            ? { ...region(regions.main), overflow: "hidden" }
-            : { position: "absolute", inset: 0 }
+            ? { ...stageRootStyle, ...region(regions.main), overflow: "hidden" }
+            : { ...stageRootStyle, position: "absolute", inset: 0 }
         }
       >
         {children}

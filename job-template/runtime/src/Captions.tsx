@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { useVideoConfig } from "remotion";
 import project from "../../project.json";
+import { textLayerStyle } from "../../motion-kit/layers";
 import { biimEnabled, regionsFor, speakerFor } from "./Presentation";
 export const Captions = ({
   text,
@@ -26,6 +27,9 @@ export const Captions = ({
     <div
       data-speaker-id={speaker.id}
       style={{
+        // Own compositing layer: captions must not share a layer with the
+        // scene, or a removed caption can ghost back (see motion-kit/layers).
+        ...textLayerStyle,
         position: "absolute",
         left: keepBiimRegion
           ? `${(x / project.layout.base_width) * 100}%`

@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { fitFontSize } from "./lyric-fit";
+import { lyricLayerStyle } from "./layers";
 
 export type LyricHit = {
   text: string;
@@ -63,6 +64,9 @@ export const LyricPunch = ({
   return (
     <div
       style={{
+        // Own compositing layer so replaced words cannot ghost back from a
+        // stale shared layer in the render tab (see layers.ts).
+        ...lyricLayerStyle,
         position: "absolute",
         ...box,
         display: "flex",
