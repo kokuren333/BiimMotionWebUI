@@ -1,5 +1,11 @@
 # Verification — 2026-10-06
 
+## Compositing-layer separation and render-ghost checks (2026-11-09)
+
+- `npm test`: 25 tests passed (19 existing + 6 new in `tests/ghost.test.ts`). New coverage: tile signatures average each tile region; single-frame detection catches a one-frame appearance and ignores cuts, sustained and held content; double-render comparison flags only the differing frames; the motion-kit text parts (LyricLine / LyricPunch / KineticText), Captions and overlays sit on their own compositing layers by default via `motion-kit/layers.ts`; `validate --final` wires the ghost scan as an advisory (`reports/ghost-check.md`), not a failure.
+- New job commands: `npm run ghost-check` scans `output/final.mp4`; `npm run ghost-check -- --double-render` (or `validate -- --final --double-render`) renders a second copy and compares every frame. AGENTS.md documents the symptom, cause, layer-separation fix and the 3-frame minimum for intentional short displays.
+- `npm run build -- --base=/BiimMotionWebUI/` passed. End-to-end runs on real production material are left to the user; the checks above cover the detection logic and template wiring, not a full production render.
+
 ## Design-first MV principles, diversity and Codex imagegen (2026-11-09)
 
 - `npm test`: 19 tests passed (13 existing + 6 new). New coverage: direction candidates differ on every axis, are deterministic per seed and vary across seeds; lyric stats (lines, section tags, blocks, long lines); MV brief/project carry the differentiation memo, `plan/direction.md`, the quality checklist and `asset_generation` (image generation on, video generation off by default, both switchable); the shipped AGENTS.md contains the design-first principles, 3-direction diversity step, lyric visualisation, character sheet / anti-slop consistency, optional layer approach, video generation off by default, the verification loop and failure checklist; the imagegen wrapper and new motion-kit files are packaged. The motion-kit count assertion moved from 10 to 12.

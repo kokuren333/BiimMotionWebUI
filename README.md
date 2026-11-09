@@ -176,6 +176,8 @@ npm run preview                 # output/preview.mp4（半分の解像度）
 npm run still -- --frame=30      # output/preview.png
 npm run build                   # output/final.mp4
 npm run validate -- --final      # 最終成果物と制作記録の検査
+npm run ghost-check             # final.mp4のレンダーゴースト（1フレームだけの要素）走査
+npm run ghost-check -- --double-render  # もう1本レンダーして全フレーム照合
 ```
 
 解説動画の同梱シーンは6秒の動作確認用で、`project.scenes`は意図的に空です。制作時にエージェントが場面の目録と`scenes/index.tsx`を編集し、内容と音声の実測尺に合わせて構成します。掛け合いは`scenes[].dialogue`または`plan/narration.json`に発話ごとの`speaker_id`を明記し、話者の音声・字幕色を適用します。
@@ -215,9 +217,9 @@ npm run validate
 npm run preview
 ```
 
-`tools/make-fixture.ts`は`--duo`、`--fullscreen`、`--portrait`、`--mv`に対応します。`--mv`は6.25秒の確認用音源と歌詞を含むMVジョブを生成します。指定なしでは横・1人・Biimのジョブを生成します。テストはZIP内容、入力条件、独立したモデル・音声・字幕、レイアウト、添付データ、パス、安全な音声タイミング、音響生成、MVの方向性候補・歌詞の集計・制作原則の同梱、Codex imagegenラッパーの成功・版管理・失敗時の続行（偽のCodexで検証）を確認します。
+`tools/make-fixture.ts`は`--duo`、`--fullscreen`、`--portrait`、`--mv`に対応します。`--mv`は6.25秒の確認用音源と歌詞を含むMVジョブを生成します。指定なしでは横・1人・Biimのジョブを生成します。テストはZIP内容、入力条件、独立したモデル・音声・字幕、レイアウト、添付データ、パス、安全な音声タイミング、音響生成、MVの方向性候補・歌詞の集計・制作原則の同梱、Codex imagegenラッパーの成功・版管理・失敗時の続行（偽のCodexで検証）、テキスト・オーバーレイの合成レイヤー分離とレンダーゴースト検出（単フレーム検出・二重レンダー照合）を確認します。
 
-検証結果は[VERIFICATION.md](VERIFICATION.md)に記録しています。`validate`は構造検査であり、完成映像の目視・音声確認は制作工程で行います。`validate --final`は本番の制作記録と成果物がない動作確認用ジョブを拒否します。
+検証結果は[VERIFICATION.md](VERIFICATION.md)に記録しています。`validate`は構造検査であり、完成映像の目視・音声確認は制作工程で行います。`validate --final`は本番の制作記録と成果物がない動作確認用ジョブを拒否し、final.mp4のレンダーゴースト走査結果を`reports/ghost-check.md`に助言として記録します（合否には影響しません）。
 
 ## ライセンス
 
