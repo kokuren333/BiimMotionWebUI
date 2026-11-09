@@ -266,6 +266,10 @@ if (process.argv.includes("--final")) {
             ")"
           : ""),
     );
+    if (result.classification)
+      console.log(
+        `GHOST classification: isolated ${result.classification.isolatedCount} (ghost suspects — check stills), clustered ${result.classification.clusteredEventCount} in ${result.classification.clusteredRunCount} runs (likely transitions/motion). Details: reports/ghost-check.json`,
+      );
     if (result.doubleRender)
       console.log(
         `GHOST double-render mismatches: ${result.doubleRender.mismatches.length} frames`,

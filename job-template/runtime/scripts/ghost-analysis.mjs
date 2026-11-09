@@ -116,6 +116,63 @@ export function detectSingleFrameEvents(
   return events;
 }
 
+const tileCount = (event) =>
+  Array.isArray(event.tiles) ? event.tiles.length : (event.tiles ?? 0);
+
+/**
+ * Classify single-frame events into isolated flashes and clustered runs.
+ *
+ * Field experience (043 preview, 4,991 frames): the raw detector also fires
+ * all over fast camera work and scene transitions, and those hits arrive in
+ * consecutive-frame runs (e.g. frames 350-360, 2880-2885, 4392-4398). A true
+ * render ghost — a stale layer flashing for exactly one frame — is isolated:
+ * no other event on the neighbouring frames. So reports split the hits:
+ *   - isolated: a run of exactly one event frame. Ghost suspects; each one
+ *     needs a still-image check.
+ *   - clustered: a run of 2+ event frames whose frames are at most
+ *     clusterGap apart (default 1, i.e. strictly consecutive). Most likely
+ *     an intentional transition/strobe or dense motion; check a
+ *     representative frame instead of every frame.
+ * Events may carry tiles as an index list or as a count. Returns
+ * { isolated, clustered: [{startFrame, endFrame, frames, maxTiles}],
+ *   isolatedCount, clusteredRunCount, clusteredEventCount }.
+ * Input order does not matter; runs come back in frame order.
+ */
+export function classifyFlashEvents(events, { clusterGap = 1 } = {}) {
+  const sorted = [...events].sort((a, b) => a.frame - b.frame);
+  const isolated = [];
+  const clustered = [];
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    if (run.length === 1) isolated.push(run[0]);
+    else
+      clustered.push({
+        startFrame: run[0].frame,
+        endFrame: run[run.length - 1].frame,
+        frames: run.map((event) => event.frame),
+        maxTiles: Math.max(...run.map(tileCount)),
+      });
+    run = [];
+  };
+  for (const event of sorted) {
+    if (run.length && event.frame - run[run.length - 1].frame > clusterGap)
+      flush();
+    run.push(event);
+  }
+  flush();
+  return {
+    isolated,
+    clustered,
+    isolatedCount: isolated.length,
+    clusteredRunCount: clustered.length,
+    clusteredEventCount: clustered.reduce(
+      (sum, entry) => sum + entry.frames.length,
+      0,
+    ),
+  };
+}
+
 /** Format seconds as m:ss.cc for reports. */
 export function formatTime(sec) {
   const minutes = Math.floor(sec / 60);

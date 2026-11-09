@@ -20,8 +20,11 @@ npm run still -- --frame=30  # output/preview.png
 npm run build          # output/final.mp4（指定解像度 H.264/AAC）
 npm run validate -- --final # 成果物・シーン目録・QA記録の検査
 npm run ghost-check    # final.mp4のレンダーゴースト走査（1フレーム要素の検出）
+npm run ghost-check -- --target=preview # preview.mp4にも同じ走査（final前の早期検出）
 npm run ghost-check -- --double-render # 同一コードでもう1本レンダーして全フレーム照合
 ```
+
+ghost-checkの結果はreports/ghost-check(-preview).md（人用）・.json（機械可読、WebUIで開ける）と、指摘フレーム前後の静止画reports/ghost-stills/に出力されます。検出は「孤立フラッシュ（ゴースト嫌疑、全部を静止画で照合）」と「連続クラスタ（転換・高速動作に多く、代表確認で可）」に分類されます。
 
 `npm install`でジョブルートにpackage-lock.jsonが作られたら、以降はそのルートで`npm ci`を実行して環境を再現できます。Aivisを使う場合は、project.jsonで指定したエンジンURLとStyle IDを制作するPCで利用できるようにします。「音声合成なし」のジョブでは音声合成工程を省略します。
 最初の映像は6秒の動作確認用です。希望尺に水増ししていません。scenes/index.tsxと各Sceneを編集し、実際の音声尺に合わせてSequenceを組み直してください。project.jsonのscenesは未記入です。自動検査だけでは目視・聴取確認を代替できません。WebUI更新後の設定・ヘルパーを既存ジョブに反映する場合は、ZIPを再生成するか該当ファイルを更新します。
