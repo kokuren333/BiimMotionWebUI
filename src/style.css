@@ -1966,3 +1966,60 @@ dialog a {
   margin-top: 14px;
   font-size: 11px;
 }
+
+/* Ghost-check result viewer (handoff card) */
+.ghost-check-viewer {
+  margin-top: 18px;
+  border-top: 1px solid #e2e7d8;
+  padding-top: 16px;
+}
+.ghost-check-viewer code {
+  font-size: 8.5px;
+  background: #f0f3e9;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.ghost-check-error {
+  color: #b3261e !important;
+}
+.ghost-check-result strong {
+  font-size: 9px;
+  color: #6a7e5b;
+}
+.ghost-verdict {
+  font-weight: 600;
+  font-size: 10px;
+  margin-top: 10px;
+  color: #6a7e5b;
+}
+.ghost-verdict.warn {
+  color: #b3261e;
+}
+.ghost-counts,
+.ghost-worst {
+  font-size: 9px;
+  line-height: 1.9;
+  color: #819273;
+  padding-left: 14px;
+}
+.ghost-stills figure {
+  margin: 10px 0;
+}
+.ghost-stills figcaption {
+  font-size: 9px;
+  color: #6a7e5b;
+  margin-bottom: 4px;
+}
+.ghost-still-images {
+  display: flex;
+  gap: 4px;
+}
+.ghost-still-images img {
+  width: 32%;
+  border: 1px solid #e2e7d8;
+  border-radius: 4px;
+}
+.ghost-still-missing {
+  font-size: 8px;
+  color: #9aa58e;
+}

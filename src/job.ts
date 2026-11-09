@@ -201,8 +201,123 @@ export const mvInstructions =
   "アップロードした完成音源と参考資料を基に、曲の雰囲気に合うモーショングラフィックス系のMVを制作してください。音源を最初から最後までそのまま使用し、楽曲の展開と映像を同期してください。";
 export const agentPromptFor = (mode: MotionForm["videoMode"]) =>
   mode === "mv"
-    ? "AGENTS.mdを読み、brief.md、曲の雰囲気、歌詞入力、完成音源とsourcesを基にMVを制作してください。楽曲分析の後、方向性を3案出して選び、スタイルを定義してからストーリーボードと実装へ進んでください。Biim枠を使わず、曲に合ったモーショングラフィックスをビート・フレーズ・展開に同期させ、音源の実測尺で構成してください。背景・透過素材・キャラシートが必要ならAGENTS.mdの手順でCodex CLIのimagegenを使ってください。Aivis音声や追加BGM・SEは生成せず、previewを映像と音で確認し、AGENTS.mdの失敗パターンを点検して修正後、final.mp4を完成させてください。"
-    : "AGENTS.mdを読み、brief.mdとsourcesを基に動画を制作してください。台本・ストーリーボード・Remotionシーン・Aivis音声・3Dキャラ同期を実装し、設定に応じて場面に合う簡単なBGM・SEも制作してください。previewを映像と音で確認して修正後、final.mp4を完成させてください。";
+    ? "AGENTS.mdを読み、brief.md、曲の雰囲気、歌詞入力、完成音源とsourcesを基にMVを制作してください。楽曲分析の後、方向性を3案出して選び、スタイルを定義してからストーリーボードと実装へ進んでください。Biim枠を使わず、曲に合ったモーショングラフィックスをビート・フレーズ・展開に同期させ、音源の実測尺で構成してください。背景・透過素材・キャラシートが必要ならAGENTS.mdの手順でCodex CLIのimagegenを使ってください。Aivis音声や追加BGM・SEは生成せず、previewを映像と音で確認し、AGENTS.mdの失敗パターンを点検して修正後、final.mp4を完成させてください。previewが出たらruntimeでnpm run ghost-check -- --target=previewを実行し、孤立フラッシュ（ゴースト嫌疑）をreports/ghost-stills/の静止画で確認して、問題があれば直してからfinalへ進んでください。final後もnpm run ghost-checkで同じ検査を行ってください。"
+    : "AGENTS.mdを読み、brief.mdとsourcesを基に動画を制作してください。台本・ストーリーボード・Remotionシーン・Aivis音声・3Dキャラ同期を実装し、設定に応じて場面に合う簡単なBGM・SEも制作してください。previewを映像と音で確認して修正後、final.mp4を完成させてください。previewが出たらruntimeでnpm run ghost-check -- --target=previewを実行し、孤立フラッシュ（ゴースト嫌疑）をreports/ghost-stills/の静止画で確認して、問題があれば直してからfinalへ進んでください。final後もnpm run ghost-checkで同じ検査を行ってください。";
+
+/** reports/ghost-check(-preview).json の読み取り結果（ghost-check.mjsが出力）。 */
+export interface GhostCheckFrameEvent {
+  frame: number;
+  time: string;
+  tiles: number;
+}
+export interface GhostCheckRun {
+  startFrame: number;
+  endFrame: number;
+  startTime: string;
+  endTime: string;
+  events: number;
+  maxTiles: number;
+}
+export interface GhostCheckStill {
+  frame: number;
+  time: string;
+  kind: string;
+  files: string[];
+}
+export interface GhostCheckSummary {
+  video: string;
+  fps: number;
+  frames: number;
+  duration: string;
+  singleFrameEvents: number;
+  isolated: number;
+  clusteredRuns: number;
+  clusteredEvents: number;
+  isolatedEvents: GhostCheckFrameEvent[];
+  clustered: GhostCheckRun[];
+  worst: GhostCheckFrameEvent[];
+  stills: GhostCheckStill[];
+}
+
+/**
+ * ghost-check.mjs が書く機械可読サマリ（JSON）を検証して取り込む。
+ * 形式が違う・壊れている場合は null を返し、UI側で読み直しを促す。
+ */
+export function parseGhostCheckReport(text: string): GhostCheckSummary | null {
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== "object" || data.kind !== "biim-ghost-check")
+    return null;
+  if (typeof data.video !== "string" || !data.counts) return null;
+  const num = (value: unknown, fallback = 0) =>
+    typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  const str = (value: unknown) => (typeof value === "string" ? value : "");
+  const record = (value: unknown) =>
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+  const frameEvent = (value: unknown): GhostCheckFrameEvent => {
+    const entry = record(value);
+    return {
+      frame: num(entry.frame),
+      time: str(entry.time),
+      tiles: num(entry.tiles),
+    };
+  };
+  const counts = record(data.counts);
+  return {
+    video: data.video,
+    fps: num(data.fps, 30),
+    frames: num(data.frames),
+    duration: str(data.duration),
+    singleFrameEvents: num(counts.singleFrameEvents),
+    isolated: num(counts.isolated),
+    clusteredRuns: num(counts.clusteredRuns),
+    clusteredEvents: num(counts.clusteredEvents),
+    isolatedEvents: Array.isArray(data.isolated)
+      ? data.isolated.map(frameEvent)
+      : [],
+    clustered: Array.isArray(data.clustered)
+      ? data.clustered.map((value) => {
+          const run = record(value);
+          return {
+            startFrame: num(run.startFrame),
+            endFrame: num(run.endFrame),
+            startTime: str(run.startTime),
+            endTime: str(run.endTime),
+            events: num(run.events),
+            maxTiles: num(run.maxTiles),
+          };
+        })
+      : [],
+    worst: Array.isArray(data.worst) ? data.worst.map(frameEvent) : [],
+    stills: Array.isArray(data.stills)
+      ? data.stills.map((value) => {
+          const still = record(value);
+          return {
+            frame: num(still.frame),
+            time: str(still.time),
+            kind: str(still.kind),
+            files: Array.isArray(still.files)
+              ? still.files.filter(
+                  (file): file is string => typeof file === "string",
+                )
+              : [],
+          };
+        })
+      : [],
+  };
+}
+
+/** 孤立フラッシュが残っているかどうかの要約文（助言であり合否ではない）。 */
+export const ghostCheckVerdict = (summary: GhostCheckSummary) =>
+  summary.isolated > 0
+    ? `要注意：孤立フラッシュ ${summary.isolated} 件（ゴースト嫌疑）— 静止画で正解と照合してください`
+    : "孤立フラッシュなし（連続クラスタのみ）";
 
 const modeKeys = [
   "design",

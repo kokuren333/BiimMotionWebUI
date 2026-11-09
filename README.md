@@ -177,6 +177,7 @@ npm run still -- --frame=30      # output/preview.png
 npm run build                   # output/final.mp4
 npm run validate -- --final      # 最終成果物と制作記録の検査
 npm run ghost-check             # final.mp4のレンダーゴースト（1フレームだけの要素）走査
+npm run ghost-check -- --target=preview  # preview.mp4にも同じ走査（結果はreports/ghost-check-preview.*と静止画）
 npm run ghost-check -- --double-render  # もう1本レンダーして全フレーム照合
 ```
 

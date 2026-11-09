@@ -21,6 +21,9 @@ import {
   type CharacterForm,
   type JobAssets,
   type MotionForm,
+  parseGhostCheckReport,
+  ghostCheckVerdict,
+  type GhostCheckSummary,
 } from "./job";
 import { loadTemplates } from "./templates";
 import {
@@ -202,6 +205,11 @@ export default function App() {
     Math.floor(Math.random() * 2 ** 31),
   );
   const [addedCandidate, setAddedCandidate] = useState<number | null>(null);
+  const [ghostSummary, setGhostSummary] = useState<GhostCheckSummary | null>(
+    null,
+  );
+  const [ghostStills, setGhostStills] = useState<Record<string, string>>({});
+  const [ghostError, setGhostError] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const isMV = form.videoMode === "mv";
@@ -444,6 +452,37 @@ export default function App() {
         "コピーできませんでした。下の指示を選択してコピーしてください。",
       );
     }
+  }
+  async function loadGhostCheck(files: FileList | null) {
+    if (!files?.length) return;
+    const list = Array.from(files);
+    const stillUrls: Record<string, string> = {};
+    for (const file of list) {
+      if (/\.png$/i.test(file.name))
+        stillUrls[file.name] = URL.createObjectURL(file);
+    }
+    if (Object.keys(stillUrls).length) {
+      setGhostStills((previous) => {
+        for (const url of Object.values(previous)) URL.revokeObjectURL(url);
+        return stillUrls;
+      });
+    }
+    const json = list.find((file) => /\.json$/i.test(file.name));
+    if (!json) {
+      if (!Object.keys(stillUrls).length)
+        setGhostError("ghost-check のJSON（reports/ghost-check*.json）を選んでください。");
+      return;
+    }
+    const parsed = parseGhostCheckReport(await json.text());
+    if (!parsed) {
+      setGhostSummary(null);
+      setGhostError(
+        "ghost-check のJSONとして読み取れませんでした。reports/ghost-check.md と同じフォルダのJSONを選んでください。",
+      );
+      return;
+    }
+    setGhostError("");
+    setGhostSummary(parsed);
   }
   function sample() {
     modeDrafts.current = {};
@@ -1949,6 +1988,96 @@ export default function App() {
                       <span>Remotion</span>
                       <span>React Three Fiber</span>
                       <span>{isMV ? "Music Video" : "Aivis"}</span>
+                    </div>
+                    <div className="ghost-check-viewer">
+                      <span className="eyebrow">GHOST CHECK</span>
+                      <h3>レンダーゴースト検査の結果</h3>
+                      <p>
+                        ローカル（runtime）で{" "}
+                        <code>npm run ghost-check -- --target=preview</code>
+                        （final後は引数なし）を実行すると、reports/に
+                        ghost-check*.json と ghost-stills/ の静止画が出ます。
+                        そのJSONと静止画PNGをここで開くと、結果をこの画面で確認できます（ファイルは送信されません）。
+                      </p>
+                      <label className="file-button">
+                        検査結果を開く
+                        <input
+                          type="file"
+                          accept=".json,.png"
+                          multiple
+                          aria-label="ghost-checkのJSONと静止画を選択"
+                          onChange={(e) => {
+                            void loadGhostCheck(e.target.files);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      {ghostError && (
+                        <p className="ghost-check-error" role="alert">
+                          {ghostError}
+                        </p>
+                      )}
+                      {ghostSummary && (
+                        <div className="ghost-check-result">
+                          <p
+                            className={
+                              ghostSummary.isolated > 0
+                                ? "ghost-verdict warn"
+                                : "ghost-verdict"
+                            }
+                          >
+                            {ghostCheckVerdict(ghostSummary)}
+                          </p>
+                          <ul className="ghost-counts">
+                            <li>対象 {ghostSummary.video}</li>
+                            <li>
+                              {ghostSummary.frames} フレーム（{ghostSummary.duration}）
+                            </li>
+                            <li>1フレーム検出 {ghostSummary.singleFrameEvents} 件</li>
+                            <li>孤立 {ghostSummary.isolated} 件</li>
+                            <li>
+                              連続クラスタ {ghostSummary.clusteredRuns} ラン（{ghostSummary.clusteredEvents} 件）
+                            </li>
+                          </ul>
+                          {ghostSummary.worst.length > 0 && (
+                            <>
+                              <strong>ワーストフレーム</strong>
+                              <ul className="ghost-worst">
+                                {ghostSummary.worst.map((event) => (
+                                  <li key={event.frame}>
+                                    frame {event.frame}（{event.time}）: {event.tiles} タイル
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          )}
+                          {ghostSummary.stills.length > 0 && (
+                            <div className="ghost-stills">
+                              {ghostSummary.stills.map((still) => (
+                                <figure key={still.frame}>
+                                  <figcaption>
+                                    frame {still.frame}（{still.time}）
+                                    {still.kind === "isolated" ? " 孤立" : " クラスタ代表"}
+                                  </figcaption>
+                                  <div className="ghost-still-images">
+                                    {still.files.map((file) => {
+                                      const name = file.split("/").pop() ?? file;
+                                      const url = ghostStills[name];
+                                      return url ? (
+                                        <img key={file} src={url} alt={`${name}`} />
+                                      ) : (
+                                        <span key={file} className="ghost-still-missing">
+                                          {name}（未選択）
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </figure>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
