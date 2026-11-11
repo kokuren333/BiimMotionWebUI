@@ -163,6 +163,12 @@ async function renderSecondCopy(outputName) {
         "--codec=h264",
         "--audio-codec=aac",
         "--pixel-format=yuv420p",
+        // Same GPU (NVENC) settings as run.mjs build; see run.mjs for why
+        // the explicit bitrate is required alongside hardware acceleration.
+        "--hardware-acceleration",
+        "if-possible",
+        "--video-bitrate",
+        "16M",
       ],
       { cwd: runtime, stdio: "inherit" },
     );
