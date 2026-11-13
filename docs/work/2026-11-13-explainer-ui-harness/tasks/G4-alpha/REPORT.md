@@ -140,3 +140,43 @@ OS の一時フォルダに `git worktree add --detach <一時>/base 955fa5c` �
 | A22 | `SPACE_HANDOFF.md` §3.2（`style_mode`）と §5.3（非 Biim のハンドオフに Biim レイアウト指示を入れない規則、禁止語9語） |
 
 上は照合の記録で、合否は判定しない。
+
+## 4. main へのローカルマージと push 待ち
+
+- マージコミット：`5e50308`「Merge feat/explainer-harness: explainer harness, QC and style modes」。親は `955fa5c`（main の元の先端）と `ef8cd96`（波ブランチの検証記録コミット）。マージコミット（no-ff）にした。
+- 手順の補足：`git checkout main` の時点で `tasks/G4-alpha/DIRECTION.md` を Windows が削除できず（`unable to unlink … Invalid argument`。本セッションを起動した側がファイルを開いたままにしているとみられる）、`git merge --no-ff` がファイルを書き換える前に中止した（main は `955fa5c` のまま、変更なし）。残ったファイルの内容は波ブランチの blob（`0a7d415`）と同一だった。main が波ブランチの祖先であり、no-ff マージの結果のツリーは波ブランチのツリーそのものになるので、同じマージコミットを `git commit-tree "feat/explainer-harness^{tree}" -p main -p feat/explainer-harness` で作り、`git update-ref`（旧値 `955fa5c` を指定）で main を進めた。作業ツリーは `git reset --mixed` の後、ロックされたファイル以外を `git checkout --` で戻した。`git status` はクリーン。結果は通常の `git merge --no-ff` と同じ（2つの親、波ブランチと同一のツリー）。
+- main 上での再検証（PowerShell）：
+  - `npm ci`：exit 0（`package-lock.json` に変化なし）
+  - `npm test`：72 tests / 72 pass / 0 fail、exit 0
+  - `npm run build -- --base=/BiimMotionWebUI/`：98 modules、exit 0。`dist/index.html` に `/BiimMotionWebUI/assets` を含む（`Select-String -Quiet`）
+  - Pages 用ビルド：`.github/workflows/pages.yml` は `npm ci` → `npm test` → `npm run build -- --base=/${{ github.event.repository.name }}/`。リポジトリ名は `BiimMotionWebUI`（`origin` の URL）なので、上の3コマンドがそのまま Pages 用ビルドの再現になる。すべて exit 0
+- 本 REPORT の main マージ後の追記（この節以降）は、波ブランチを main に fast-forward してから波ブランチでコミットし、main をそのコミットへ fast-forward した。そのため main と `feat/explainer-harness` は同じコミットを指す（マージコミットの後に記録だけのコミットが1つ続く）。
+- **push はしていない。** GitHub 認証ブロッカー（Git Credential Manager の対話認証待ち）のため、`git push`・`gh pr create`・`gh pr merge` は行っていない。main は `origin/main` より先に進んだローカル状態（main マージ済み・push 待ち）。
+- **Pages の表示確認（公開後確認①）は push 後のオーナー作業**として残す。計画書 §6.3 の手順（`gh run watch` で build・deploy の成功を確認し、`tools/ui-shots.mjs --url=https://kokuren333.github.io/BiimMotionWebUI/ --only=S1,S3,S7` で撮って CP-W1 と比べ、`VERIFICATION.md` に追記）。G4-α の完了条件には含めない。
+- `docs/work/2026-11-13-explainer-ui-harness/reviews/G4-alpha.md` は L2 が書くので作っていない。
+
+## 5. 持ち越し事項
+
+- **T9a の D1〜D6**（CONTRACT と `qc.mjs` の食い違い。POST-2 での `waived` の数え方、`scene_ids` の意味、`ADV-PRE-*` の出現段階、`inputs` の範囲、`detail` の言語、終了コード2の範囲）：スペース版の読み方を指定したので S1 の進行は妨げない。どちらを正とするかは T4（QC の所有者）の判断に委ねる持ち越し。本セッションでは直していない。
+- **T4-review（`6b9d34f`）の m1〜m4**：
+  - m1（preview でゴーストと判定して修正した後も、古い `- GHOST preview fNNN: ゴースト` 行が残ると final で不合格になる。照合行の書き換え方の明記）：`job-template/AGENTS.md` に書き換え方の説明は見当たらず、**未対応**。T3 系の文書（T8b など）への持ち越し。
+  - m2（非 Biim のシーンコードでの validate）：T5b で対応済み（`tasks/T5b/verify-fixtures.mjs`）。
+  - m3（`.verification/` の ZIP バイト列の比較手順）・m4（POST-1 の単体テストがスタブ）：参考・粒度の指摘で、**未対応のまま持ち越し**。
+- **T5-review（`0c78d81`）の N1〜N3**：
+  - N1（縦のとき mixed を選べない理由の文言が選択肢のそばに出ない）：`src/App.tsx` に CONTRACT §4.4 の文言は無く、**未対応**。T7 の刷新時に扱うかは L2 の判断。
+  - N2（T5 の REPORT の C-5 行の記録の誤り、訂正は任意）：未対応（記録の訂正なし）。
+  - N3（所見、対応不要）：対応なし。
+- **EX-17**：Biim 枠・キャラ左と全画面・横の2配置は still 実測で一致。キャラ右・2人・キャラなし・縦、半角幅比率（0.5）、読み上げ速度（6.0文字/秒）の実測は **T11 へ持ち越し**。
+- **完成動画つきの事後ゲート（`qc --stage=post`）の合格経路**：本セッションでは preview と ghost-check までで、final と事後ゲートの通しは T11 の範囲（T8a の記録どおり）。
+- **C-6 の一致1件**：`tasks/G4-alpha/DIRECTION.md` にメイン checkout のローカル絶対パスがある（L2 の `7336589`）。本セッションは触っていない。公開前に消すかは L2 の判断。
+- **このマシンの ffmpeg**：PATH 上の scoop の shim が壊れており、`ghost-check` は `FFMPEG_PATH` を指定しないと Remotion 同梱の ffmpeg（`rawvideo` 出力なし）で失敗する。T11 の制作環境では `FFMPEG_PATH` の指定か scoop の修理が要る（オーナー環境の作業）。
+
+## 6. 判断したこと・質問（非ブロッキング。既定の判断で進めた）
+
+1. **C-3**：指示は「`tests/qc.test.ts:47` の末尾空行を削除」だったが、競合解決で T4 最終版を採った結果、その空行は統合後に存在しなかった。テストファイルは触らず、`git diff --check` が空であることだけを確認した。
+2. **CP-W1 の追記場所**：T8a の節（G3 合格済み）の「予定」の文を書き換えず、別の節として末尾に追記した。
+3. **EX-17**：一部の配置で実測できたので記録したが、全配置ではないため「係数の実測確定」とはせず、規則版も上げていない。残りは T11。
+4. **ghost-check の ffmpeg**：環境を直さず、スクリプトが元から持つ `FFMPEG_PATH` の上書きで実行した。最初の失敗も記録した。
+5. **main マージの方法**：ファイルのロックで `git merge` が中止したため、同じ結果になるマージコミットを plumbing で作った（§4）。L2 が通常の `git merge` を求める場合は、ロックを外したうえで `git update-ref refs/heads/main 955fa5c` で戻してやり直せる（push 前なので影響はローカルだけ）。
+6. **記録コミットの main への取り込み**：main マージ後の REPORT 追記は fast-forward で main にも入れた（main と波ブランチを同じ先端にそろえるため）。main にマージ以外のコミットを足したくない場合は、L2 が push 前に main を `5e50308` に戻せる。
+7. 1件目のマージコミットに帰属行を付け忘れたので、push 前に `--amend` でメッセージだけ直した。
