@@ -10,6 +10,8 @@ import {
   agentPromptFor,
   modeSettingsFor,
   switchVideoMode,
+  switchStyleMode,
+  type StyleMode,
   type ModeSettings,
   createProject,
   characterProfiles,
@@ -25,7 +27,7 @@ import {
   ghostCheckVerdict,
   type GhostCheckSummary,
 } from "./job";
-import { loadTemplates } from "./templates";
+import { loadTemplates, templates } from "./templates";
 import {
   directionAxes,
   directionCandidates,
@@ -33,6 +35,14 @@ import {
   lyricStats,
   mvQualityChecklist,
 } from "./mv-assist";
+import {
+  explainerAxesForContext,
+  explainerCandidates,
+  explainerQualityChecklist,
+  explainerStyles,
+  formatExplainerCandidate,
+  scriptStats,
+} from "./explainer-assist";
 
 function Icon({
   name,
@@ -131,6 +141,9 @@ const sizeLabel = (size: number) =>
   size < 1024 * 1024
     ? `${(size / 1024).toFixed(1)} KB`
     : `${(size / 1024 / 1024).toFixed(1)} MB`;
+const motionKitCount = Object.keys(templates).filter((path) =>
+  /^motion-kit\/[^/]+\.tsx$/.test(path),
+).length;
 
 function Section({ index, children }: { index: number; children: ReactNode }) {
   const section = sections[index];
@@ -205,6 +218,13 @@ export default function App() {
     Math.floor(Math.random() * 2 ** 31),
   );
   const [addedCandidate, setAddedCandidate] = useState<number | null>(null);
+  const [explainerSeed, setExplainerSeed] = useState(() =>
+    Math.floor(Math.random() * 2 ** 31),
+  );
+  const [addedExplainerCandidate, setAddedExplainerCandidate] = useState<number | null>(null);
+  const [adoptedExplainerCandidates, setAdoptedExplainerCandidates] = useState<
+    { text: string; mode: StyleMode }[]
+  >([]);
   const [ghostSummary, setGhostSummary] = useState<GhostCheckSummary | null>(
     null,
   );
@@ -213,7 +233,7 @@ export default function App() {
   const errorRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const isMV = form.videoMode === "mv";
-  const agentPrompt = agentPromptFor(form.videoMode);
+  const agentPrompt = agentPromptFor(form.videoMode, form.styleMode);
   const assets: JobAssets = {
     sources: sources.map((file) => ({
       name: file.name,
@@ -253,6 +273,11 @@ export default function App() {
   const portrait = form.height > form.width;
   const lyrics = lyricStats(form.musicLyrics);
   const candidates = directionCandidates(directionSeed);
+  const explainerOptions = explainerCandidates(explainerSeed, 3, form);
+  const explainerContextAxes = explainerAxesForContext(form);
+  const scriptSpeed = Number.isFinite(form.voiceSpeed) && form.voiceSpeed > 0 ? form.voiceSpeed : 1;
+  const script = scriptStats(form.outline, { project, speed: scriptSpeed });
+  const nonBiimStyle = !isMV && (form.styleMode === "anime" || form.styleMode === "motion");
   const conceptReady = Boolean(
     form.title.trim() && form.description.trim() && form.audience.trim(),
   );
@@ -273,6 +298,32 @@ export default function App() {
     ],
     ["デザイン方向性", Boolean(form.design.trim()), "推奨"],
     ["差別化メモ", Boolean(form.differentiation.trim()), "任意"],
+  ];
+  const explainerReadiness: [string, boolean, string][] = [
+    ["タイトル", Boolean(form.title.trim()), "必須"],
+    ["説明目的", Boolean(form.description.trim()), "必須"],
+    ["視聴者", Boolean(form.audience.trim()), "必須"],
+    ["理解ゴール", Boolean(form.takeaway.trim()), "推奨"],
+    ["根拠（資料・URL・追加Web調査）", sources.length > 0 || urlLines(form.urls).length > 0 || form.allowWebResearch, "推奨"],
+    ["デザイン方向性", Boolean(form.design.trim()), "推奨"],
+    ...(form.characterUsage !== "none" ? [
+      ["キャラモデル", Boolean(character && (form.characterMode !== "duo" || secondCharacter)), "推奨"] as [string, boolean, string],
+    ] : []),
+    ["構成メモ", Boolean(form.outline.trim()), "任意"],
+    ["差別化メモ", Boolean(form.explainerDifferentiation.trim()), "任意"],
+    ["BGM", Boolean(bgm), "任意"],
+  ];
+  const explainerWarnings = [
+    ...(form.evidencePolicy === "supplied-only" && sources.length === 0 && urlLines(form.urls).length === 0
+      ? ["根拠方針が「提供資料の範囲」ですが、資料も参考URLもありません。"] : []),
+    ...(form.outline.trim() && form.durationSec > 0 && Math.abs(script.estimatedSeconds - form.durationSec) / form.durationSec >= 0.3
+      ? [`構成メモの推定読み上げ ${script.estimatedSeconds.toFixed(1)}秒（目安）が希望尺 ${form.durationSec}秒と3割以上ずれています。`] : []),
+    ...(adoptedExplainerCandidates.some((candidate) => candidate.mode !== form.styleMode && form.design.includes(candidate.text))
+      ? ["追記したたたき台と、選択中の様式モードが異なります。採る要素を調整するか、様式を選び直してください。"] : []),
+    ...(form.styleMode === "mixed" && portrait
+      ? ["縦向きでは様式「混在」を使えません。横向きにするか、別の様式を選んでください。"] : []),
+    ...(form.styleMode === "mixed" && (form.fullScreen || form.biimUsage === "never")
+      ? ["様式「混在」にはBiim区間が必要です。全画面をオフにし、Biim使用率を選び直してください。"] : []),
   ];
   const completed = [
     isMV ? conceptReady && Boolean(music && form.musicDurationSec) : conceptReady,
@@ -486,6 +537,8 @@ export default function App() {
   }
   function sample() {
     modeDrafts.current = {};
+    setAdoptedExplainerCandidates([]);
+    setAddedExplainerCandidate(null);
     setMusic(undefined);
     setForm({
       ...defaults,
@@ -504,10 +557,12 @@ export default function App() {
     key: K,
     title: string,
     options: [string, string][],
+    disabled = false,
   ) => (
     <label>
       {title}
       <select
+        disabled={disabled}
         value={String(form[key])}
         onChange={(e) => field(key, e.target.value as MotionForm[K])}
       >
@@ -717,6 +772,52 @@ export default function App() {
                       </small>
                     </label>
                   </div>
+                  {!isMV && (
+                    <>
+                      <label>
+                        理解ゴール
+                        <textarea
+                          rows={3}
+                          value={form.takeaway}
+                          onChange={(e) => field("takeaway", e.target.value)}
+                          placeholder="視聴後に、視聴者が言えること・できること。"
+                        />
+                      </label>
+                      <label>
+                        前提知識と想定される誤解
+                        <textarea
+                          rows={3}
+                          value={form.priorKnowledge}
+                          onChange={(e) => field("priorKnowledge", e.target.value)}
+                          placeholder="すでに知っていること、説明が必要なこと、訂正したい誤解。"
+                        />
+                      </label>
+                      <label>
+                        構成メモ・台本の下書き
+                        <textarea
+                          rows={8}
+                          value={form.outline}
+                          onChange={(e) => field("outline", e.target.value)}
+                          placeholder={"見出しや段落、台本を改行したまま入力できます。\n原文をplan/outline.txtに保存します。"}
+                        />
+                        <span className="lyric-stats" role="status" aria-label="構成メモの統計">
+                          <span>{script.characters}文字</span>
+                          <span>推定読み上げ {script.estimatedSeconds.toFixed(1)}秒（目安）</span>
+                          <span>見出し {script.headings} / {script.blocks}ブロック</span>
+                          <span>最長文 {script.longestSentence}文字</span>
+                          <span className={script.overCapacitySentences ? "warn" : ""}>
+                            字幕容量超過 {script.overCapacitySentences}文
+                          </span>
+                          <span>数値・数式を含む行 {script.numericLines}</span>
+                        </span>
+                        <small>
+                          話速 {scriptSpeed} での目安です。字幕領域は
+                          {script.captionBoxes.map((box) => `${box.charsPerLine}文字×${box.lines}行`).join(" / ")}。
+                          場面は未定のため、いずれかの領域に収まらない文を数えます。超過は字幕単位を分割して直します。数値・数式の行は根拠を確かめる箇所の目安です。
+                        </small>
+                      </label>
+                    </>
+                  )}
                   {isMV && (
                     <>
                       <label>
@@ -891,12 +992,36 @@ export default function App() {
                     <span>Motion graphics</span>
                     <span>{isMV ? "Lyric typography" : "3D character"}</span>
                   </div>
+                  {!isMV && (
+                    <label>
+                      様式モード
+                      <select
+                        value={form.styleMode}
+                        onChange={(e) => {
+                          setForm((previous) => switchStyleMode(previous, e.target.value as StyleMode));
+                          setCopyStatus("");
+                          changed();
+                        }}
+                      >
+                        {(Object.entries(explainerStyles) as [StyleMode, typeof explainerStyles.biim][]).map(([mode, style]) => (
+                          <option key={mode} value={mode} disabled={portrait && mode === "mixed"}>
+                            {style.label}
+                          </option>
+                        ))}
+                      </select>
+                      <small>{explainerStyles[form.styleMode].hint}</small>
+                      {portrait && form.styleMode === "biim" && (
+                        <small>縦向きではBiim枠を使えないため、Biim様式の全画面（枠なし）になります。</small>
+                      )}
+                      {nonBiimStyle && <small>この様式では常に全画面・枠なし。全画面モードとBiim使用率の値は保持します。</small>}
+                    </label>
+                  )}
                   <label className="check-label layout-switch">
                     <input
                       type="checkbox"
                       role="switch"
                       checked={fullScreen}
-                      disabled={portrait || isMV}
+                      disabled={portrait || isMV || nonBiimStyle}
                       onChange={(e) => {
                         setForm((prev) => ({
                           ...prev,
@@ -911,6 +1036,8 @@ export default function App() {
                       <small>
                         {isMV
                           ? "MVではBiim枠を使用せず、画面全体を使います。"
+                          : nonBiimStyle
+                            ? "この様式では常に全画面・枠なし。"
                           : portrait
                             ? "縦9:16ではBiim枠を使用しません。"
                             : "オンにするとBiim枠を外し、映像に画面全体を使います。"}
@@ -1013,6 +1140,49 @@ export default function App() {
                           }
                           placeholder="前作と変えたい点、似せたくない作品、避けたい表現。例：前作はピンクの高速タイポだったので、今回は余白の多いモノクロにする。"
                         />
+                      </label>
+                    </div>
+                  )}
+                  {!isMV && (
+                    <div className="direction-lab">
+                      <div className="direction-lab-heading">
+                        <div>
+                          <strong>方向性のたたき台</strong>
+                          <small>
+                            説明の運び方と様式を組み替えた3案です。固定の正解ではなく、採る要素だけデザイン方向性へ追記します。様式モードは選択欄で指定してください。
+                          </small>
+                        </div>
+                        <button type="button" className="ghost-button" onClick={() => {
+                          setExplainerSeed((seed) => (seed * 48271 + 11) % 2147483647);
+                          setAddedExplainerCandidate(null);
+                        }}>別の組み合わせ</button>
+                      </div>
+                      <div className="candidate-grid">
+                        {explainerOptions.map((candidate, i) => (
+                          <article className="candidate-card" key={i}>
+                            <span className="candidate-label">案 {String.fromCharCode(65 + i)}</span>
+                            <dl>
+                              {explainerContextAxes.map((axis) => (
+                                <div key={axis.key}><dt>{axis.label}</dt><dd>{candidate[axis.key]}</dd></div>
+                              ))}
+                            </dl>
+                            <button type="button" className="ghost-button" onClick={() => {
+                              const text = formatExplainerCandidate(candidate);
+                              field("design", [form.design.trim(), text].filter(Boolean).join("\n"));
+                              setAdoptedExplainerCandidates((previous) => [...previous.filter((entry) => entry.text !== text), { text, mode: candidate.styleMode }]);
+                              setAddedExplainerCandidate(i);
+                            }}>{addedExplainerCandidate === i ? "追記しました" : "この案を追記"}</button>
+                          </article>
+                        ))}
+                      </div>
+                      <details className="axis-hints">
+                        <summary>変化の軸と考え方</summary>
+                        <ul>{explainerContextAxes.map((axis) => <li key={axis.key}><strong>{axis.label}</strong> {axis.hint}</li>)}</ul>
+                        <small>制作時は理解ゴールに照らして3案を比較し、3軸以上と、説明の骨格か図解の核を変えます。キャラなしでは役回りを外します。</small>
+                      </details>
+                      <label>
+                        差別化メモ
+                        <textarea rows={3} value={form.explainerDifferentiation} onChange={(e) => field("explainerDifferentiation", e.target.value)} placeholder="前作と変えたい説明の運び方・図解・演技、避けたい表現。MV用のメモとは別々に保持します。" />
                       </label>
                     </div>
                   )}
@@ -1588,12 +1758,12 @@ export default function App() {
                           ["balanced", "バランスよく"],
                           ["rich", "豊富に使う"],
                         ])}
-                        {!fullScreen &&
+                        {(!fullScreen || nonBiimStyle || form.styleMode === "mixed") &&
                           select("biimUsage", "Biimレイアウト使用率", [
                             ["never", "使わない"],
                             ["sometimes", "場面に応じて"],
                             ["mostly", "主なレイアウトにする"],
-                          ])}
+                          ], nonBiimStyle)}
                       </div>
                       {select("characterUsage", "3Dキャラ登場頻度", [
                         ["none", "登場させない"],
@@ -1827,7 +1997,7 @@ export default function App() {
                         </div>
                       )}
                       {preview === "files" && (
-                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${!isMV && character ? "├─ character.glb" : "└─ (素材は任意)"}\n${!isMV && form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${!isMV && bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}${isMV && music ? "│  └─ music" + music.name.slice(music.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (12 components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
+                        <pre className="file-tree">{`my-video/\n├─ AGENTS.md\n├─ project.json\n├─ brief.md\n├─ sources/  (${sources.length} files)\n├─ assets/\n│  ${!isMV && character ? "├─ character.glb" : "└─ (素材は任意)"}\n${!isMV && form.characterMode === "duo" && secondCharacter ? "│  ├─ character2.glb\n" : ""}${!isMV && bgm ? "│  └─ bgm" + bgm.name.slice(bgm.name.lastIndexOf(".")) + "\n" : ""}${isMV && music ? "│  └─ music" + music.name.slice(music.name.lastIndexOf(".")) + "\n" : ""}├─ runtime/\n│  ├─ package.json\n│  ├─ src/\n│  └─ scripts/\n├─ motion-kit/  (${motionKitCount} components)\n├─ scenes/\n│  └─ Scene001.tsx\n└─ reports/`}</pre>
                       )}
                       {preview === "json" && (
                         <pre className="json-preview">
@@ -1889,9 +2059,8 @@ export default function App() {
                       <br />
                       ランタイムをひとつのZIPに。
                     </p>
-                    {isMV && (
-                      <ul className="readiness" aria-label="MV入力の状況">
-                        {mvReadiness.map(([label, done, note]) => (
+                    <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
+                        {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
                           <li key={label} className={done ? "done" : ""}>
                             <span className="readiness-mark">
                               {done ? <Icon name="check" size={12} /> : null}
@@ -1901,6 +2070,11 @@ export default function App() {
                           </li>
                         ))}
                       </ul>
+                    {!isMV && explainerWarnings.length > 0 && (
+                      <div className="ghost-verdict warn" role="status" aria-label="解説入力の注意">
+                        <ul>{explainerWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                        <small>準備度と注意は入力の助言です。必須入力と設定の整合性は生成時に確認します。</small>
+                      </div>
                     )}
                     <div className="export-meta">
                       <span className={valid ? "ready" : ""}>
@@ -1971,11 +2145,10 @@ export default function App() {
                       </button>
                     </div>
                     <small role="status">{copyStatus}</small>
-                    {isMV && (
                       <details className="quality-checklist">
                         <summary>previewで確認する失敗パターン</summary>
                         <ul>
-                          {mvQualityChecklist.map((item) => (
+                          {(isMV ? mvQualityChecklist : explainerQualityChecklist).map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
@@ -1983,7 +2156,6 @@ export default function App() {
                           指摘は「時刻・問題・期待する改善」をセットで伝えると、良い部分を壊さずに直せます。
                         </small>
                       </details>
-                    )}
                     <div className="runtime-tags">
                       <span>Remotion</span>
                       <span>React Three Fiber</span>
@@ -2127,7 +2299,7 @@ export default function App() {
         <h3>同梱するもの</h3>
         <p>
           制作指示、JSON設定、ブリーフ、添付資料、最小Remotion / React /
-          Three.jsプロジェクト、Aivisラッパー、字幕・BGMの再生口、Codex imagegenラッパー、12個のmotion-kitコンポーネント、preview
+          Three.jsプロジェクト、Aivisラッパー、字幕・BGMの再生口、Codex imagegenラッパー、{motionKitCount}個のmotion-kitコンポーネント、preview
           / build /
           validateコマンド。依存パッケージやNode.js、Aivisエンジン、3Dモデルは自動で同梱しません。
         </p>
