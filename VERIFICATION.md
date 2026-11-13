@@ -72,3 +72,9 @@ Generated and extracted `.verification/smoke-motion-job.zip`, installed its npm 
 ## Scope and limits
 
 This verifies the MVP job generator and a short runtime smoke video. It does not certify a full 30-second Opus production, actual character rig retargeting, mouth morphs, arbitrary GLB animations, or subjective music quality. Automated validation does not replace watching and listening to the completed video. Fonts are bundled under their OFL licenses and explicitly awaited; consistent layout and fonts depend on using the provided standard components. Node/npm dependencies and the render browser are acquired during runtime setup, not bundled as portable executables.
+
+## 2026-11-13 EX-17 字幕帯域係数（暫定、T4-1）
+
+出典は要件書 EX-17 の試算と T1 契約 §6（現行 Captions の余白・行間）。単一モジュール `job-template/runtime/scripts/caption-capacity.mjs`、規則版 `1` に定義した。片側余白 x=12・y=4、行間=1.2、全画面の文字サイズは横52・縦54、Biim キャラなしの幅比率=0.94、半角幅=0.5・全角幅=1。内寸を文字サイズと行間で除して切り捨て、1行文字数×行数を容量とする。既定容量は Biim 1人左46（23×2）・右48（24×2）・2人38（19×2）・キャラなし54（27×2）、全画面横32（32×1）・縦34（17×2）。読み上げ推定の6.0文字/秒も暫定の目安。
+
+still による実測確定は未了。T11 または G4-α で実測し、係数を変える場合は規則版を上げる。今回の幾何計算テストとビルド確認を、実表示の実測確定として扱わない。
