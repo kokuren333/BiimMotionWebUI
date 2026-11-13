@@ -1,7 +1,8 @@
 /* BiimMotion WebUI — product family theme "Circuit White / Solder Mask".
  * Rules: docs/DESIGN.md. Colours appear as literal values only in the :root
  * blocks at the top of this file; everything below uses var(--…).
- * No shadows, gradients, blur or translucent overlays. */
+ * No shadows, colour ramps, soft-focus filters, translucent overlays or rounded corners.
+ * Text sizes are written in px (12px minimum, 14px body). Nothing animates. */
 
 /* ---------------------------------------------------------------------------
  * Family tokens — a hand-synced COPY.
@@ -89,29 +90,47 @@
   --biim-line: #cccccc;
   --biim-text: #f4f4f4;
   --biim-stroke: #FFFFFF;
-  --font-caption: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  --font-caption: "BiimMotion Caption", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
 
   --bm-fs: 14px;
+  --bm-fs-h2: 18px;
+  --bm-fs-h3: 15px;
   --bar-h: 44px;
   --band-h: 88px;
   --note-w: clamp(320px, 27vw, 420px);
   --region-gap: 10px;
+  --field-h: 34px;
 }
 
-/* ---------- base ---------- */
+/* Subtitle typeface of the output spec, bundled in public/job-assets/fonts/.
+ * Used only by the caption motif; swap keeps first paint unblocked (UI-06). */
+@font-face {
+  font-family: "BiimMotion Caption";
+  src: local("M PLUS Rounded 1c ExtraBold"), local("MPLUSRounded1c-ExtraBold"),
+    url("/job-assets/fonts/MPLUSRounded1c-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-display: swap;
+}
+
+/* ===================== base ===================== */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
+/* A TOC jump lands the section top at 96px: below the sticky app bar and
+ * TOC (about 88px) and above the 100px top margin of the current-section
+ * observer in App.tsx, so the previous section is not marked current. */
 html {
-  scroll-padding-top: calc(var(--bar-h) + 56px);
+  scroll-padding-top: calc(var(--bar-h) + 52px);
 }
 body {
   margin: 0;
   background: var(--cs-board);
   color: var(--ui-text);
-  font: var(--bm-fs) / 1.5 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--bm-fs);
+  line-height: 1.5;
 }
 button,
 input,
@@ -124,13 +143,16 @@ button {
   cursor: pointer;
 }
 button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
 }
 h1,
 h2,
 h3 {
   margin: 0;
   line-height: 1.3;
+}
+p {
+  margin: 0;
 }
 a {
   color: var(--ui-text);
@@ -141,12 +163,15 @@ pre {
 }
 code {
   font-size: var(--fs-s);
-  background: var(--cs-pad);
   padding: 0 3px;
+  background: var(--cs-pad);
+  border: 1px solid var(--ui-pad-line);
 }
 img.ico {
   display: inline-block;
   flex: none;
+  width: 16px;
+  height: 16px;
   vertical-align: middle;
   image-rendering: pixelated;
 }
@@ -165,16 +190,16 @@ img.ico {
   position: absolute !important;
   width: 1px;
   height: 1px;
+  margin: -1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-  margin: -1px;
 }
 
-/* ---------- regions: framed panels with the family notch ---------- */
+/* ===================== regions: framed panels with the family notch ===================== */
 .app-shell {
   min-height: 100vh;
-  padding-bottom: calc(var(--band-h) + var(--region-gap) * 2);
+  padding-bottom: calc(var(--band-h) + var(--region-gap));
 }
 .region {
   position: relative;
@@ -209,10 +234,10 @@ img.ico {
   border-bottom: 2px solid var(--ui-ph-line);
   color: var(--ui-ph-text);
   font-size: var(--fs);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* ---------- app bar (brand, data note, about) ---------- */
+/* ===================== app bar ===================== */
 .app-bar {
   position: sticky;
   top: 0;
@@ -228,14 +253,13 @@ img.ico {
 .brand {
   font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-decoration: none;
   color: var(--ui-text);
+  text-decoration: none;
 }
 .app-task {
+  padding-left: 12px;
   font-size: var(--bm-fs);
   font-weight: 600;
-  padding-left: 12px;
   border-left: 2px solid var(--ui-sep);
 }
 .local-note {
@@ -243,17 +267,13 @@ img.ico {
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
 }
-.local-note small {
-  margin-left: 6px;
-  font-size: var(--fs-s);
-}
 .version {
   font-family: var(--font-mono);
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
 }
 
-/* ---------- four-region grid ---------- */
+/* ===================== four-region grid ===================== */
 .studio {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--note-w);
@@ -264,11 +284,11 @@ img.ico {
 .note-column {
   position: sticky;
   top: calc(var(--bar-h) + var(--region-gap));
-  height: calc(100vh - var(--bar-h) - var(--band-h) - var(--region-gap) * 3);
   display: grid;
-  grid-template-rows: fit-content(55%) minmax(0, 1fr);
+  grid-template-rows: 46% minmax(0, 1fr);
   gap: var(--region-gap);
   min-width: 0;
+  height: calc(100vh - var(--bar-h) - var(--band-h) - var(--region-gap) * 3);
 }
 .region-note-top,
 .region-note-bottom {
@@ -283,7 +303,7 @@ img.ico {
   padding: 10px 12px 12px;
 }
 
-/* ---------- main region: table of contents ---------- */
+/* ===================== main region: table of contents ===================== */
 .toc-bar {
   position: sticky;
   top: var(--bar-h);
@@ -309,23 +329,26 @@ img.ico {
   padding: 0 10px;
   color: var(--ui-text);
   text-decoration: none;
-  border: 2px solid transparent;
+  border: 2px solid var(--cs-panel);
 }
 .toc a:hover {
   background: var(--ui-pad-hover);
 }
 .toc a.active {
+  font-weight: 700;
   background: var(--ui-ph-bg-on);
   border-color: var(--ui-ph-line-on);
-  font-weight: 600;
 }
+/* numbers stay ink: trace-deep on the panel is 4.21:1, under the 4.5:1 of UI-16 */
 .toc-number {
+  padding: 0 3px;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--ui-signal);
+  color: var(--ui-text);
+  border-bottom: 2px solid var(--ui-signal);
 }
 .toc a.active .toc-number {
-  color: var(--ui-text);
+  border-bottom-color: var(--ui-text);
 }
 .toc-mark {
   display: inline-block;
@@ -333,14 +356,14 @@ img.ico {
   font-weight: 700;
 }
 
-/* ---------- pads (buttons) ---------- */
+/* ===================== pads (buttons) ===================== */
 .sample-button,
 .file-button,
 .ghost-button,
 .copy-button,
 .download-button,
 .about-button,
-.icon-button,
+.small-button,
 .preview-tabs button {
   position: relative;
   display: inline-flex;
@@ -348,22 +371,24 @@ img.ico {
   justify-content: center;
   gap: 6px;
   min-height: var(--pad-h);
+  margin: 0;
   padding: 2px 10px;
   color: var(--ui-text);
+  font-size: var(--fs);
+  font-weight: 400;
+  white-space: nowrap;
   background: var(--cs-pad);
   border: 2px solid;
   border-color: var(--cs-pad) var(--ui-pad-line) var(--ui-pad-line) var(--cs-pad);
   border-radius: 0;
   clip-path: var(--chamfer);
-  font-size: var(--fs);
-  white-space: nowrap;
 }
 .sample-button:hover:not(:disabled),
 .file-button:hover,
 .ghost-button:hover:not(:disabled),
 .copy-button:hover,
 .about-button:hover,
-.icon-button:hover {
+.small-button:hover {
   background: var(--ui-pad-hover);
 }
 .sample-button:focus-visible,
@@ -371,7 +396,7 @@ img.ico {
 .copy-button:focus-visible,
 .download-button:focus-visible,
 .about-button:focus-visible,
-.icon-button:focus-visible,
+.small-button:focus-visible,
 .preview-tabs button:focus-visible,
 .file-button:focus-within {
   outline: 2px solid var(--ui-focus);
@@ -379,7 +404,9 @@ img.ico {
 }
 .sample-button:disabled,
 .ghost-button:disabled,
-.download-button:disabled {
+.download-button:disabled,
+fieldset:disabled .small-button,
+fieldset:disabled .file-button {
   color: var(--ui-text-soft);
   background: var(--cs-panel);
   border-color: var(--ui-sep);
@@ -395,43 +422,37 @@ img.ico {
 .download-button:hover:not(:disabled) {
   background: var(--ui-pad-hover);
 }
-.icon-button {
-  width: var(--pad-h);
-  padding: 0;
-}
+.small-button,
 .ghost-button {
   font-size: var(--fs-s);
 }
 .text-button {
   padding: 0;
+  color: var(--ui-text);
+  font-size: var(--fs-s);
+  text-decoration: underline;
   background: none;
   border: 0;
-  color: var(--ui-text);
-  text-decoration: underline;
-  font-size: var(--fs-s);
 }
 .about-button {
-  text-decoration: none;
   font-size: var(--fs-s);
 }
 
 /* file input covered by its label (keep this structure: audit §(3)-6) */
 .file-button {
   overflow: hidden;
-  margin: 0;
   cursor: pointer;
-  font-weight: 400;
 }
 .file-button input {
   position: absolute;
   inset: 0;
-  opacity: 0;
   margin: 0;
   padding: 0;
+  opacity: 0;
   cursor: pointer;
 }
 
-/* ---------- form ---------- */
+/* ===================== form: sections ===================== */
 .form-body {
   min-width: 0;
   margin: 0;
@@ -439,40 +460,36 @@ img.ico {
   border: 0;
 }
 .form-section {
-  padding: 14px 18px 10px;
+  padding: 12px 18px 14px;
   border-bottom: 2px solid var(--ui-sep);
-  scroll-margin-top: calc(var(--bar-h) + 56px);
 }
 .section-heading {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .section-number {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--ui-text);
   padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ui-text);
   border: 2px solid var(--ui-panel-line);
 }
 .section-heading h2 {
-  font-size: 18px;
-}
-.eyebrow {
-  display: block;
-  font-size: var(--fs-s);
-  color: var(--ui-text-soft);
-  letter-spacing: 0.04em;
+  font-size: var(--bm-fs-h2);
 }
 .section-intro {
-  margin: 4px 0 10px;
+  margin: 4px 0 8px;
+  font-size: var(--fs);
   color: var(--ui-text-soft);
 }
+
+/* ===================== form: fields ===================== */
 label {
   display: block;
-  margin: 12px 0;
+  margin: 10px 0;
   font-weight: 600;
 }
 label small,
@@ -484,11 +501,11 @@ label small,
   color: var(--ui-text-soft);
 }
 em {
-  font-style: normal;
-  font-size: var(--fs-s);
-  font-weight: 600;
-  padding: 0 4px;
   margin-left: 4px;
+  padding: 0 4px;
+  font-size: var(--fs-s);
+  font-style: normal;
+  font-weight: 600;
   color: var(--ui-text);
   background: var(--ui-error-bg);
   border: 1px solid var(--cs-error);
@@ -498,8 +515,8 @@ select,
 textarea {
   display: block;
   width: 100%;
+  min-height: var(--field-h);
   margin-top: 4px;
-  min-height: 34px;
   padding: 6px 8px;
   font-weight: 400;
   color: var(--ui-text);
@@ -566,7 +583,7 @@ input[type="checkbox"] {
   gap: 8px;
 }
 .layout-switch {
-  padding: 10px;
+  padding: 8px 10px;
   background: var(--cs-pad);
   border: 1px solid var(--ui-pad-line);
 }
@@ -586,12 +603,14 @@ input[type="checkbox"] {
   background: var(--ui-warn-bg);
   border-color: var(--cs-warn);
 }
+
+/* ===================== form: attachments ===================== */
 .dropzone {
   display: grid;
   justify-items: center;
   gap: 4px;
-  margin: 12px 0 0;
-  padding: 16px;
+  margin: 10px 0 0;
+  padding: 14px 16px;
   text-align: center;
   background: var(--cs-pad);
   border: 2px dashed var(--ui-panel-line);
@@ -601,49 +620,46 @@ input[type="checkbox"] {
   border-style: solid;
   border-color: var(--ui-on-line);
 }
+.dropzone strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .dropzone > span {
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
 }
-.drop-icon {
-  line-height: 0;
-  color: var(--ui-signal);
-}
 .attachments {
-  list-style: none;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   padding: 0;
+  list-style: none;
 }
 .attachments li {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 4px;
-  padding: 4px 6px;
+  padding: 3px 4px 3px 8px;
   border: 1px solid var(--ui-sep);
 }
 .attachments li > div {
   flex: 1;
-  min-width: 0;
   display: flex;
   align-items: baseline;
   gap: 8px;
+  min-width: 0;
 }
 .attachments strong {
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .attachments small {
   flex: none;
   font-family: var(--font-mono);
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
-}
-.attachment-icon {
-  line-height: 0;
-  color: var(--ui-signal);
 }
 .attachment-count {
   display: block;
@@ -653,7 +669,7 @@ input[type="checkbox"] {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   padding: 8px 10px;
   border: 1px solid var(--ui-sep);
 }
@@ -661,30 +677,49 @@ input[type="checkbox"] {
   flex: 1;
   min-width: 0;
 }
-.asset-icon {
-  flex: none;
+.asset-picker small {
+  margin-top: 0;
+}
+
+/* ===================== form: direction ===================== */
+.style-mode-list {
   display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  color: var(--ui-signal);
-  background: var(--cs-pad);
-  border: 1px solid var(--ui-pad-line);
-}
-.direction-tags {
-  display: flex;
-  flex-wrap: wrap;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
-  margin-bottom: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 400;
 }
-.direction-tags span {
-  padding: 0 6px;
-  font-size: var(--fs-s);
-  color: var(--ui-text-soft);
+.style-mode-list li {
+  padding: 4px 8px;
+  font-size: var(--fs);
   border: 1px solid var(--ui-sep);
 }
+.style-mode-list li.selected {
+  background: var(--ui-sel-bg);
+  border: 2px solid var(--ui-on-line);
+}
+.style-mode-list strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.style-mode-list span {
+  display: block;
+  color: var(--ui-text-soft);
+}
+.style-mode-list .style-mode-current {
+  display: inline-block;
+  padding: 0 4px;
+  font-size: var(--fs-s);
+  font-weight: 600;
+  color: var(--ui-text);
+  border: 1px solid var(--ui-on-line);
+}
 .direction-lab {
-  margin: 12px 0;
+  margin: 10px 0;
   padding: 10px 12px;
   border: 2px solid var(--ui-sep);
 }
@@ -735,8 +770,8 @@ input[type="checkbox"] {
 }
 .axis-hints summary,
 .quality-checklist summary {
-  cursor: pointer;
   font-weight: 600;
+  cursor: pointer;
 }
 .axis-hints ul,
 .quality-checklist ul {
@@ -744,10 +779,16 @@ input[type="checkbox"] {
   padding-left: 18px;
   font-size: var(--fs);
 }
-.asset-options {
-  margin: 12px 0;
-  padding: 6px 12px;
+.asset-options,
+.character-card {
+  min-width: 0;
+  margin: 10px 0;
+  padding: 4px 12px 8px;
   border: 1px solid var(--ui-sep);
+}
+.character-card {
+  padding-bottom: 10px;
+  border-width: 2px;
 }
 .asset-options legend,
 .character-card legend {
@@ -755,31 +796,20 @@ input[type="checkbox"] {
   font-weight: 600;
 }
 .creative-note {
-  display: flex;
-  gap: 8px;
-  margin: 12px 0 4px;
+  margin: 10px 0 0;
   padding: 6px 10px;
+  font-size: var(--fs);
   background: var(--cs-pad);
   border-left: 2px solid var(--ui-panel-line);
 }
-.creative-note > span {
-  display: none;
-}
-.creative-note p {
-  margin: 0;
-}
-.character-card {
-  min-width: 0;
-  margin: 12px 0;
-  padding: 6px 12px 10px;
-  border: 2px solid var(--ui-sep);
-}
+
+/* ===================== form: character subtitle colour ===================== */
 .subtitle-settings {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 .subtitle-settings label {
   margin: 0;
@@ -787,28 +817,31 @@ input[type="checkbox"] {
 .subtitle-settings input[type="color"] {
   display: block;
   width: 56px;
-  height: 34px;
+  height: var(--field-h);
   margin-top: 4px;
   padding: 2px;
   background: var(--cs-panel);
   border: 1px solid var(--ui-swatch-line);
+  border-radius: 0;
   cursor: pointer;
 }
 .subtitle-settings .color-hex {
   width: 110px;
   font-family: var(--font-mono);
 }
-/* Biim frame motif: subtitle sample shows the output subtitle style */
+/* Biim frame motif: the sample shows the output subtitle style */
 .subtitle-sample {
   padding: 6px 14px;
   font-family: var(--font-caption);
-  font-weight: 800;
   font-size: 20px;
+  font-weight: 800;
   background: var(--biim-bg);
   border: 2px solid var(--biim-line);
   -webkit-text-stroke: 4px var(--biim-stroke);
   paint-order: stroke fill;
 }
+
+/* ===================== form: details toggle and footnote ===================== */
 .advanced-section {
   border-bottom: 2px solid var(--ui-sep);
 }
@@ -817,31 +850,29 @@ input[type="checkbox"] {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 12px 18px;
-  text-align: left;
+  padding: 10px 18px;
   color: var(--ui-text);
+  text-align: left;
   background: var(--cs-panel);
   border: 0;
 }
 .advanced-toggle:hover {
   background: var(--ui-pad-hover);
 }
-.advanced-toggle span {
+.advanced-toggle > span {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.advanced-toggle small {
+.advanced-toggle .toggle-state {
+  padding: 0 8px;
   font-size: var(--fs-s);
-  color: var(--ui-text-soft);
+  border: 1px solid var(--ui-pad-line);
 }
 #advanced-controls {
   padding: 0 18px 12px;
 }
 .editor-footnote {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin: 0;
   padding: 8px 18px;
   font-size: var(--fs-s);
@@ -856,7 +887,7 @@ input[type="checkbox"] {
   border-top: 2px solid var(--ui-sep);
 }
 
-/* ---------- right-top note: job summary and readiness ---------- */
+/* ===================== right-top note: job summary and readiness ===================== */
 .job-title h3 {
   margin-bottom: 6px;
   font-size: 16px;
@@ -882,20 +913,20 @@ input[type="checkbox"] {
   overflow-wrap: anywhere;
 }
 .readiness {
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 .readiness li {
   display: grid;
-  grid-template-columns: 18px 1fr;
+  grid-template-columns: 18px 1fr auto;
   column-gap: 8px;
-  padding: 4px 0;
+  align-items: center;
+  padding: 3px 0;
   font-size: var(--fs);
   border-bottom: 1px solid var(--ui-sep-weak);
 }
 .readiness li small {
-  grid-column: 2;
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
 }
@@ -904,14 +935,16 @@ input[type="checkbox"] {
   place-items: center;
   width: 16px;
   height: 16px;
-  margin-top: 2px;
+  font-size: var(--fs-s);
+  font-weight: 700;
+  line-height: 1;
   background: var(--cs-panel);
   border: 1px solid var(--ui-field-line);
 }
 .readiness li.done .readiness-mark {
+  color: var(--ui-text);
   background: var(--ui-pad-on-bg);
   border-color: var(--ui-on-line);
-  color: var(--ui-text);
 }
 .ghost-verdict {
   margin: 8px 0;
@@ -934,22 +967,22 @@ input[type="checkbox"] {
   color: var(--ui-text-soft);
 }
 
-/* ---------- right-bottom note: switchable supplements ---------- */
+/* ===================== right-bottom note: switchable supplements ===================== */
 .preview-tabs {
   display: flex;
   gap: 2px;
   border-bottom: 2px solid var(--ui-sep);
 }
 .preview-tabs button {
-  clip-path: none;
-  background: var(--cs-panel);
   border-color: var(--ui-sep);
   border-bottom-width: 0;
+  background: var(--cs-panel);
+  clip-path: none;
 }
 .preview-tabs button.selected {
+  font-weight: 700;
   background: var(--ui-ph-bg-on);
   border-color: var(--ui-ph-line-on);
-  font-weight: 600;
 }
 .layout-preview {
   padding: 10px 0 0;
@@ -957,7 +990,6 @@ input[type="checkbox"] {
 .preview-caption {
   margin: 6px 0 0;
   font-size: var(--fs-s);
-  text-align: center;
   color: var(--ui-text-soft);
 }
 .file-tree,
@@ -978,9 +1010,13 @@ input[type="checkbox"] {
   padding-top: 10px;
   border-top: 2px solid var(--ui-sep);
 }
+.quality-checklist {
+  padding-top: 8px;
+  border-top: 2px solid var(--ui-sep);
+}
 .handoff-card h3,
 .ghost-check-viewer h3 {
-  font-size: 15px;
+  font-size: var(--bm-fs-h3);
 }
 .handoff-card p,
 .ghost-check-viewer p {
@@ -988,8 +1024,10 @@ input[type="checkbox"] {
   font-size: var(--fs);
 }
 .prompt-box {
+  max-height: 180px;
   margin: 6px 0;
   padding: 8px;
+  overflow: auto;
   background: var(--cs-pad);
   border: 1px solid var(--ui-pad-line);
 }
@@ -1002,17 +1040,6 @@ input[type="checkbox"] {
   display: block;
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
-}
-.runtime-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.runtime-tags span {
-  padding: 0 6px;
-  font-size: var(--fs-s);
-  color: var(--ui-text-soft);
-  border: 1px solid var(--ui-sep);
 }
 .ghost-check-viewer .file-button {
   margin: 6px 0;
@@ -1050,41 +1077,38 @@ input[type="checkbox"] {
   border: 1px dashed var(--ui-field-line);
 }
 
-/* ---------- Biim frame motif: layout schematic (stage preview only) ---------- */
+/* ===================== Biim frame motif: layout schematic (stage preview only) =====================
+ * The class switches (.full-screen / .portrait / .duo) and the inline
+ * positions computed from project.layout are the input-linked drawing logic
+ * (audit §(3)-14); the shapes below only paint them. */
 .video-schematic {
   position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
   display: grid;
   grid-template-columns: 76% 24%;
   grid-template-rows: 77% 23%;
   gap: 2px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   background: var(--biim-bg);
   border: 5px solid var(--biim-bg);
 }
 .schematic-main {
   position: relative;
   overflow: hidden;
-  padding: 11px 13px;
+  padding: 10px 12px;
   background: var(--biim-bg);
   border: 1px solid var(--biim-line);
 }
-.scene-label {
+.schematic-title {
   display: block;
-  font-size: 5px;
-  letter-spacing: 1.2px;
-  color: var(--biim-line);
+  width: 52%;
+  height: 6px;
+  margin-bottom: 5px;
+  background: var(--biim-text);
 }
-.schematic-main strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 23px;
-  font-weight: 400;
-  line-height: 1.15;
-  color: var(--biim-text);
-}
-.schematic-main i {
-  color: var(--biim-line);
+.schematic-title.short {
+  width: 30%;
+  background: var(--biim-line);
 }
 .schematic-diagram {
   position: absolute;
@@ -1093,7 +1117,11 @@ input[type="checkbox"] {
   width: 61%;
 }
 .schematic-diagram path {
+  fill: none;
   stroke: var(--biim-line);
+}
+.schematic-diagram .schematic-curve {
+  stroke-width: 2;
 }
 .schematic-diagram circle {
   fill: var(--biim-text);
@@ -1103,15 +1131,15 @@ input[type="checkbox"] {
   background: var(--biim-bg);
   border: 1px solid var(--biim-line);
 }
-.schematic-notes span {
+.schematic-note-head {
   display: block;
-  margin-bottom: 7px;
-  font-size: 4px;
-  letter-spacing: 0.6px;
-  color: var(--biim-text);
+  width: 48%;
+  height: 3px;
+  margin-bottom: 6px;
+  background: var(--biim-text);
 }
-.schematic-notes span:nth-of-type(2) {
-  margin-top: 14px;
+.schematic-note-head:nth-of-type(2) {
+  margin-top: 12px;
 }
 .schematic-notes div {
   width: 93%;
@@ -1125,18 +1153,18 @@ input[type="checkbox"] {
 .schematic-subtitle {
   position: absolute;
   bottom: 1%;
-  height: 20%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
+  height: 20%;
   padding: 0 4%;
   background: var(--biim-bg);
   border: 1px solid var(--biim-line);
 }
 .schematic-subtitle span {
-  height: 3px;
   width: 87%;
+  height: 3px;
   outline: 1px solid var(--biim-stroke);
 }
 .schematic-subtitle span + span {
@@ -1180,22 +1208,22 @@ input[type="checkbox"] {
   bottom: 2%;
   height: 9%;
   padding: 0;
-  background: transparent;
+  background: none;
   border: 0;
 }
 .full-screen .schematic-character {
   bottom: 16%;
 }
 .video-schematic.portrait {
-  aspect-ratio: 9 / 16;
   width: 60%;
   margin: auto;
+  aspect-ratio: 9 / 16;
 }
 .portrait .schematic-character {
   transform: scale(0.62);
 }
 
-/* ---------- subtitle band (fixed at the bottom) ---------- */
+/* ===================== subtitle band (fixed at the bottom) ===================== */
 .subtitle-band {
   position: fixed;
   left: var(--region-gap);
@@ -1210,6 +1238,13 @@ input[type="checkbox"] {
   border-color: var(--ui-panel-line-on);
   /* board-coloured margin so scrolled content never shows around the band */
   outline: var(--region-gap) solid var(--cs-board);
+}
+/* while the error summary is shown, the band grows so every issue is listed
+ * (audit §(2)-16); it shrinks back when the form changes and errors clear */
+.subtitle-band:has(.errors) {
+  height: auto;
+  min-height: var(--band-h);
+  max-height: 50vh;
 }
 /* the caption strip is a stage preview: Biim frame colours, output subtitle style */
 .band-caption {
@@ -1226,7 +1261,6 @@ input[type="checkbox"] {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 10px;
-  margin: 0;
 }
 .band-status small {
   font-size: var(--fs-s);
@@ -1258,8 +1292,8 @@ input[type="checkbox"] {
 }
 .band-caption.caption .errors {
   font-family: var(--font-caption);
-  font-weight: 800;
   font-size: 15px;
+  font-weight: 800;
   color: var(--caption-alert-color);
   -webkit-text-stroke: 3px var(--biim-stroke);
   paint-order: stroke fill;
@@ -1291,15 +1325,15 @@ input[type="checkbox"] {
   accent-color: var(--cs-trace-deep);
 }
 .copy-status {
-  max-width: 180px;
+  max-width: 200px;
   font-size: var(--fs-s);
   color: var(--ui-text-soft);
 }
 
-/* ---------- dialog ---------- */
+/* ===================== dialog ===================== */
 dialog {
   max-width: min(640px, calc(100vw - 32px));
-  padding: 18px 22px;
+  padding: 16px 22px 20px;
   color: var(--ui-text);
   background: var(--cs-panel);
   border: var(--bw) solid var(--ui-panel-line-on);
@@ -1309,12 +1343,11 @@ dialog::backdrop {
   background: var(--cs-canvas-surround);
 }
 dialog h2 {
-  margin: 8px 0;
   font-size: 20px;
 }
 dialog h3 {
   margin: 14px 0 4px;
-  font-size: 15px;
+  font-size: var(--bm-fs-h3);
 }
 dialog p {
   margin: 4px 0;
@@ -1323,9 +1356,13 @@ dialog p {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ui-sep);
 }
 
-/* ---------- narrow screens ---------- */
+/* ===================== narrow screens (UI-15) ===================== */
 @media (max-width: 920px) {
   :root {
     --band-h: 96px;
@@ -1337,12 +1374,6 @@ dialog p {
     min-height: var(--bar-h);
     padding: 6px var(--region-gap);
   }
-  html {
-    scroll-padding-top: 56px;
-  }
-  .form-section {
-    scroll-margin-top: 56px;
-  }
   .toc-bar {
     top: 0;
   }
@@ -1351,8 +1382,8 @@ dialog p {
   }
   .note-column {
     position: static;
-    height: auto;
     grid-template-rows: none;
+    height: auto;
   }
   .region-body {
     overflow: visible;
@@ -1377,11 +1408,17 @@ dialog p {
   .app-task {
     display: none;
   }
+  html {
+    scroll-padding-top: 8px;
+  }
+  /* the wrapped TOC is too tall to keep on screen on phones */
   .toc-bar {
+    position: static;
     flex-wrap: wrap;
   }
   .row,
-  .concept-row {
+  .concept-row,
+  .style-mode-list {
     grid-template-columns: 1fr;
   }
   .form-section,
@@ -1393,6 +1430,9 @@ dialog p {
   }
   #advanced-controls {
     padding: 0 12px 12px;
+  }
+  .asset-picker {
+    flex-wrap: wrap;
   }
   /* existing behaviour kept: the layout preview card is hidden on phones */
   .region-note-bottom .preview-tabs,
