@@ -1,7 +1,7 @@
 /* BiimMotion WebUI — product family theme "Circuit White / Solder Mask".
  * Rules: docs/DESIGN.md. Colours appear as literal values only in the :root
  * blocks at the top of this file; everything below uses var(--…).
- * No shadows, gradients, blur, translucent overlays or rounded corners.
+ * No shadows, colour ramps, soft-focus filters, translucent overlays or rounded corners.
  * Text sizes are written in px (12px minimum, 14px body). Nothing animates. */
 
 /* ---------------------------------------------------------------------------
@@ -326,7 +326,7 @@ img.ico {
   padding: 0 10px;
   color: var(--ui-text);
   text-decoration: none;
-  border: 2px solid transparent;
+  border: 2px solid var(--cs-panel);
 }
 .toc a:hover {
   background: var(--ui-pad-hover);
@@ -336,7 +336,7 @@ img.ico {
   background: var(--ui-ph-bg-on);
   border-color: var(--ui-ph-line-on);
 }
-/* numbers stay ink: trace-deep on white is 4.21:1, under the 4.5:1 of UI-16 */
+/* numbers stay ink: trace-deep on the panel is 4.21:1, under the 4.5:1 of UI-16 */
 .toc-number {
   padding: 0 3px;
   font-family: var(--font-mono);
