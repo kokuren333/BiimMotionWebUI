@@ -72,3 +72,64 @@ Generated and extracted `.verification/smoke-motion-job.zip`, installed its npm 
 ## Scope and limits
 
 This verifies the MVP job generator and a short runtime smoke video. It does not certify a full 30-second Opus production, actual character rig retargeting, mouth morphs, arbitrary GLB animations, or subjective music quality. Automated validation does not replace watching and listening to the completed video. Fonts are bundled under their OFL licenses and explicitly awaited; consistent layout and fonts depend on using the provided standard components. Node/npm dependencies and the render browser are acquired during runtime setup, not bundled as portable executables.
+
+## 2026-11-14 解説モード 第1波の検証結果（T3・T4・T5・T5b、T8a で集約）
+
+作業ID `2026-11-13-explainer-ui-harness`。各タスクの作業ブランチで実装者が実行し、G3 でレビュー者が再実行した結果を、各タスクの記録（`docs/work/2026-11-13-explainer-ui-harness/tasks/<タスク>/REPORT.md` と G3 記録）から集約した。波のブランチへの統合後の再実行（G4-α）の結果ではない。統合後の値は G4-α で記録する。
+
+### テスト件数（各作業ブランチの `npm test`）
+
+| タスク | 件数 | 内訳と再実行 |
+| --- | --- | --- |
+| T3 制作ハーネス文書 | 36 pass / 0 fail | 既存29＋`tests/harness-docs.test.ts` 7。G3（L2）の再実行も36 |
+| T4 QC と様式対応の検証 | 54 pass / 0 fail | T4-1〜T4-4 の最終。`tests/qc.test.ts` を新設。交差レビューの再実行も54 |
+| T5 WebUI 解説支援 | 49 pass / 0 fail | T4-1・T3 を取り込んだ上で `tests/explainer.test.ts` を新設。交差レビューの再実行も49 |
+| T5b motion-kit 非 Biim 部品 | 72 pass / 0 fail | T4・T3・T5 をすべて取り込んだ上で1件追加。G3（L2）の再実行も72 |
+
+各ブランチで `npm run build -- --base=/BiimMotionWebUI/` も成功した（チャンクサイズの警告のみ）。Git Bash では MSYS のパス変換で base が書き換わるため、`MSYS2_ARG_CONV_EXCL='*'` または `MSYS_NO_PATHCONV=1` を付けて実行した結果を根拠にしている。
+
+### qc の合否事例（T4、生成したフィクスチャで実行）
+
+`node --experimental-strip-types tools/make-fixture.ts --style=<mode> --qc=<case> --out=<一時フォルダ>` で生成し、展開先で `npm install` の後に実行した。T4 の実装者と交差レビュー者の両方が同じ結果を得た。
+
+| フィクスチャ | validate | qc | 結果 |
+| --- | --- | --- | --- |
+| biim / pass | exit 0 | `--stage=pre` exit 0 | `QC pre: pass` |
+| anime / pass | exit 0 | `--stage=pre` exit 0 | `QC pre: pass` |
+| motion / pass | exit 0 | `--stage=pre` exit 0 | `QC pre: pass` |
+| mixed / pass | exit 0 | `--stage=pre` exit 0 | `QC pre: pass` |
+| mixed / fail-evidence | — | `--stage=pre` exit 1 | PRE-3 だけが fail（`Verified claim needs resolvable source_ids: C01`） |
+| mixed / fail-caption | — | `--stage=pre` exit 1 | PRE-6 だけが fail（`Split oversized captions: s01-1 (46), s02-1 (32)`。Biim 場面と全画面場面の両方の領域で判定） |
+| mixed / fail-review | — | `--stage=pre` exit 1 | PRE-4 だけが fail（`Missing checked review line: PRE-4`） |
+| mv | exit 0 | `npm run qc` exit 0 | 「この版に MV の規則は無い。MV は AGENTS.md の MV 制作工程に従う」と表示。`reports/qc-pre.json` は作られない |
+
+validate には生成 runtime 全体の TypeScript 検査が含まれる。T5b では、`motion`・`anime` のフィクスチャのシーンを非 Biim 部品（`FullscreenStage`・`StandardCaption`・`DiagramStage`）だけを使う場面に差し替え（手順は `tasks/T5b/verify-fixtures.mjs`）、Biim 部品の参照0件で `validate` と `qc --stage=pre` が合格した。完成動画のない mixed フィクスチャの `qc --stage=post` は期待どおり exit 1（`QC post: fail`）。完成動画つきの事後ゲート全体の合格経路は未検証で、G4-α または T11 に残す。
+
+### MV 非退行の確認方法と結果
+
+- **既存テストを変えずに通ること**（計画書 §5.0 C-4）：`git diff --exit-code 955fa5c -- tests/ghost.test.ts tests/imagegen.test.ts` が差分なし、`git diff -U0 955fa5c -- tests/job.test.ts | grep '^-[^-]'` が空。T3・T4・T5 で空。T5b では許容される唯一の変更（motion-kit の TSX 数 `12` → `15`）の1行だけ。各ブランチの `npm test` で MV 5件・`tests/ghost.test.ts` 全件・`tests/imagegen.test.ts` 全件が合格した。
+- **生成物のバイト一致**（T4）：基準 `955fa5c` の一時 worktree と現行で `--mv` フィクスチャを生成して比較。差分は計画書 §5.3 の許容範囲の6ファイル（`qc` スクリプトの追加、`caption-capacity.mjs`・`.d.mts`・`qc.mjs` の新設、`validate.mjs`）だけで、`brief.md`・`project.json` は `cmp` で一致した。交差レビュー者も同じ比較を再実行して一致を確認した。
+- **依頼文と brief のバイト一致**（T5）：テスト内で `955fa5c` の `src/job.ts` を一時フォルダへ取り出して実行し、MV の依頼文と brief（横・縦）がバイト単位で一致、`project.json` は `schema_version` 以外が一致することを確認した。依頼文の SHA-256 は `6a6a84c993999ef0e87502892bb8eec34f3320857eb82deddc0bfa15510c5075`、brief は横 `a2ed8ea9aa26f088c2becef3541dd51f280a693ce7dc9ba3249b2732508d6c13`・縦 `1dd42e013bf14c36276ea3048d3cc187a1da395d107a940cd6b3825ce491bb5f`。交差レビュー者も独自のスクリプトで同じ値を得た。
+- **MV の qc**：上表のとおり終了コード0で、合格の JSON を書かない（EX-19）。
+
+### CP-W1（第1波 UI のスクリーンショット）
+
+- 所在（予定）：`docs/work/2026-11-13-explainer-ui-harness/screenshots/wave1/`（S1〜S8。S6 の情報ダイアログで motion-kit 数15を表示する想定）。
+- 本節の作成時点で T5-4 は完了しておらず、撮影結果と所在は確認できていない。T5-4 の完了後に、所在・枚数・確認結果を本節へ追記する。
+
+### G3 の結果
+
+| タスク | 判定 | レビュー |
+| --- | --- | --- |
+| T3 | PASS | L2（別コンテキスト）。記録コミット `759be8d` |
+| T4 | PASS | 実働 A の交差レビュー（T4-review、`6b9d34f`） |
+| T5 | PASS | 実働 A の交差レビュー（T5-review、`0c78d81`）。CP-W1（T5-4）は範囲外 |
+| T5b | PASS | L2（別コンテキスト）。記録コミット `daece82` |
+
+### 持ち越し
+
+- **C-3 の末尾空行**：T5 のブランチで `git diff --check 2a7d209...HEAD` が `tests/qc.test.ts:47: new blank line at EOF.` を出す。T4-1（`15b42a7`）の取り込みに由来し、T4 の最終版では解消している。G4-α の統合時に修正する。
+- **EX-17 字幕帯域係数**：暫定値（T4-1 が係数を記録した節を参照）。still による実測確定は T11 または G4-α で行い、係数を変える場合は規則版を上げる。
+- **T4-review の m1〜m4**（ゴースト照合行の書き換え方の明記、非 Biim シーンでの validate の確認（T5b で実施済み）、ZIP バイト列の比較手順、POST-1 の結合）と **T5-review の N1〜N3**（縦で mixed を選べない理由の表示、REPORT の記録の誤り、チェックリスト19の扱い）は、どれも下流の作業を妨げない軽微な指摘である。
+- **CP-W1**：上記のとおり T5-4 の完了後に追記する。
+- この節は文書・テストと生成フィクスチャによる検証であり、完成した解説動画の制作（still・音・事後ゲートの合格）は T11 で行う。
