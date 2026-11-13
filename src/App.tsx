@@ -166,11 +166,11 @@ function PixelIcon({ name }: { name: "info" | "validate-ok" | "warning" | "error
 }
 
 const sections = [
-  { id: "concept", title: "動画の企画", caption: "CONCEPT" },
-  { id: "sources", title: "参考資料と指示", caption: "SOURCES" },
-  { id: "direction", title: "デザイン方向性", caption: "DIRECTION" },
-  { id: "character", title: "キャラクター", caption: "CHARACTER" },
-  { id: "voice", title: "音声と出力", caption: "VOICE & OUTPUT" },
+  { id: "concept", title: "動画の企画" },
+  { id: "sources", title: "参考資料と指示" },
+  { id: "direction", title: "デザイン方向性" },
+  { id: "character", title: "キャラクター" },
+  { id: "voice", title: "音声と出力" },
 ];
 const sizeLabel = (size: number) =>
   size < 1024 * 1024
@@ -186,10 +186,7 @@ function Section({ index, children }: { index: number; children: ReactNode }) {
     <section className="form-section" id={section.id}>
       <div className="section-heading">
         <span className="section-number">0{index + 1}</span>
-        <div>
-          <span className="eyebrow">{section.caption}</span>
-          <h2>{section.title}</h2>
-        </div>
+        <h2>{section.title}</h2>
       </div>
       {children}
     </section>
@@ -519,7 +516,7 @@ export default function App() {
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       setSuccess(
-        `${result.filename} を生成しました。展開してOpusへ渡してください。`,
+        `${result.filename} を生成しました。展開したフォルダを制作エージェントに渡してください。`,
       );
     } catch (error) {
       setErrors([
@@ -535,7 +532,7 @@ export default function App() {
       setCopyStatus("コピーしました");
     } catch {
       setCopyStatus(
-        "コピーできませんでした。下の指示を選択してコピーしてください。",
+        "コピーできませんでした。右下の「制作エージェントへの指示」を選択してコピーしてください。",
       );
     }
   }
@@ -618,7 +615,7 @@ export default function App() {
         </a>
         <h1 className="app-task">動画ジョブを作成</h1>
         <span className="local-note">
-          ブラウザ内で完結<small>資料のアップロードは不要です</small>
+          入力と添付はブラウザ内で処理し、送信しません
         </span>
         <button
           type="button"
@@ -626,7 +623,7 @@ export default function App() {
           onClick={() => setInfo(true)}
         >
           <PixelIcon name="info" />
-          このスタジオについて
+          BiimMotion について
         </button>
         <small className="version">BiimMotion · v0.1</small>
       </header>
@@ -684,9 +681,6 @@ export default function App() {
                         : "企画・資料を基に、音声と映像を制作します。"}
                     </small>
                   </label>
-                  <p className="section-intro">
-                    まずは、動画のゴールを決めましょう。
-                  </p>
                   <label>
                     動画タイトル <em>必須</em>
                     <input
@@ -713,7 +707,7 @@ export default function App() {
                     />
                     {isMV && (
                       <small>
-                        何を表現するかが先、作り方は後。演出の判断基準になります。
+                        brief.md の「表現したいこと」に入り、制作エージェントが演出を選ぶ基準になります。
                       </small>
                     )}
                   </label>
@@ -760,6 +754,7 @@ export default function App() {
                           onChange={(e) => field("takeaway", e.target.value)}
                           placeholder="視聴後に、視聴者が言えること・できること。"
                         />
+                        <small>brief.md の「理解ゴール」と project.json の direction.takeaway に入り、構成を決める基準になります。</small>
                       </label>
                       <label>
                         前提知識と想定される誤解
@@ -769,6 +764,7 @@ export default function App() {
                           onChange={(e) => field("priorKnowledge", e.target.value)}
                           placeholder="すでに知っていること、説明が必要なこと、訂正したい誤解。"
                         />
+                        <small>brief.md の「前提知識と想定される誤解」に入ります。</small>
                       </label>
                       <label>
                         構成メモ・台本の下書き
@@ -818,7 +814,7 @@ export default function App() {
                           }
                         />
                         <small>
-                          原文と改行を保存し、歌詞の表示・タイポグラフィ演出に使用します。
+                          原文と改行のまま plan/lyrics.txt と brief.md に保存し、歌詞の表示とタイポグラフィ演出に使います。
                         </small>
                         {lyrics.lines > 0 && (
                           <span className="lyric-stats" role="status">
@@ -888,7 +884,7 @@ export default function App() {
                 </Section>
                 <Section index={1}>
                   <p className="section-intro">
-                    説明の根拠と、動画全体へのリクエストを。
+                    参考URLと資料は project.json の sources と brief.md に入り、制作エージェントが内容の根拠として使います。
                   </p>
                   <label>
                     参考URL
@@ -899,7 +895,7 @@ export default function App() {
                       placeholder={"https://example.com/article\n1行に1つのURL"}
                     />
                     <small>
-                      URLの内容は、ZIPを受け取ったOpusが確認します。
+                      1行に1件。内容は制作エージェントが確認します。このWebUIはURLを取得しません。
                     </small>
                   </label>
                   <div
@@ -919,7 +915,7 @@ export default function App() {
                       <Icon name="download" size={22} />
                     </span>
                     <strong>参考資料をここにドロップ</strong>
-                    <span>PDF、画像、テキスト、データなど</span>
+                    <span>PDF、画像、テキスト、データなど。ZIPの sources/ に入ります</span>
                     <label className="file-button">
                       ファイルを選ぶ
                       <input
@@ -956,20 +952,15 @@ export default function App() {
                       placeholder="必ず扱いたい内容、避けたい表現、語り口、参考にしたい演出など。自由に書いてください。"
                     />
                     <small>
-                      入力した指示は原文のままブリーフに保存されます。
+                      原文のまま brief.md の「動画全体への優先指示」に入ります。
                     </small>
                   </label>
                 </Section>
 
                 <Section index={2}>
                   <p className="section-intro">
-                    細部を決めすぎず、目指す雰囲気を伝えます。
+                    デザイン方向性は brief.md と project.json の direction.design に入ります。制作エージェントは制作時に方向性を3案出して選び、その前提として使います。
                   </p>
-                  <div className="direction-tags" aria-hidden="true">
-                    <span>{fullScreen ? "Full screen" : "Biim layout"}</span>
-                    <span>Motion graphics</span>
-                    <span>{isMV ? "Lyric typography" : "3D character"}</span>
-                  </div>
                   {!isMV && (
                     <label>
                       様式モード
@@ -1033,9 +1024,7 @@ export default function App() {
                   </label>
                   {!fullScreen && (
                     <small>
-                      標準Biim枠は黒系背景（#1e1e1e）＋グレーの枠線（#cccccc）。Opusが場面ごとにnote_top（右上）・note_bottom（右下）・script（読み上げと字幕）を作成します。本文・ノートはNoto
-                      Sans JP、字幕はM PLUS Rounded
-                      1c。枠・フォントは同梱します。
+                      標準Biim枠は黒系背景（#1e1e1e）とグレーの枠線（#cccccc）。制作エージェントが場面ごとに note_top（右上）・note_bottom（右下）・script（読み上げと字幕）を書きます。本文とノートは Noto Sans JP、字幕は M PLUS Rounded 1c。枠とフォントはZIPに同梱します。
                     </small>
                   )}
                   {isMV && (
@@ -1105,7 +1094,7 @@ export default function App() {
                           ))}
                         </ul>
                         <small>
-                          制作時もOpusが曲ごとに3案を作って選び、前作や過去事例の組み合わせをそのまま踏襲しないようにします。
+                          制作時も制作エージェントが曲ごとに3案を作って選び、前作や過去事例の組み合わせをそのまま踏襲しないようにします。
                         </small>
                       </details>
                       <label>
@@ -1197,23 +1186,16 @@ export default function App() {
                       </span>
                     </label>
                   </fieldset>
-                  <div className="creative-note">
-                    <span>↗</span>
-                    <p>
-                      シーンの構成と演出はOpusに委ねます。
-                      <small>
-                        Remotion / React / SVG / Canvas /
-                        Three.jsを自由に使えるジョブです。
-                      </small>
-                    </p>
-                  </div>
+                  <p className="creative-note">
+                    場面の構成と演出は制作エージェントが決めます。ジョブの実行環境（runtime/）では Remotion・React・SVG・Canvas・Three.js を使えます。
+                  </p>
                 </Section>
 
                 {!isMV && (
                   <>
                     <Section index={3}>
                       <p className="section-intro">
-                        3Dキャラクターを、説明を支える演者に。
+                        キャラクターの設定は project.json の characters と brief.md に入り、台本の話者・字幕色・音声に使われます。
                       </p>
                       {select("characterMode", "キャラクターモード", [
                         ["solo", "1人で解説"],
@@ -1475,7 +1457,7 @@ export default function App() {
                         );
                       })}
                       <small>
-                        モデル未添付でもジョブを作成できます。必要な素材や代替案はOpusが整理します。
+                        GLBを添付しなくてもジョブを作成できます。添付したモデルは assets/character.glb（2人目は assets/character2.glb）に入ります。
                       </small>
                     </Section>
 
@@ -1488,7 +1470,7 @@ export default function App() {
                       {!isMV && (
                         <>
                           <p className="section-intro">
-                            声と、最終的な動画の仕様を設定します。
+                            音声・BGM・出力の設定は project.json に入り、ジョブ内の音声生成（npm run voice）と動画の書き出しに使われます。
                           </p>
                           {select("voiceEngine", "音声エンジン", [
                             ["aivis", "AivisSpeech — ローカル音声合成"],
@@ -1605,7 +1587,7 @@ export default function App() {
                               }
                             />
                             <span>
-                              場面に合う簡単なBGM・SEをOpusに作らせる
+                              場面に合う簡単なBGM・SEを制作エージェントに作らせる
                               <small>
                                 添付BGMを優先し、必要な効果音やループを制作します。
                               </small>
@@ -1710,13 +1692,12 @@ export default function App() {
                       <span>
                         <Icon name="sliders" size={19} />
                         <strong>演出と調査の詳細</strong>
-                        <small>ADVANCED</small>
                       </span>
                       <span>{advanced ? "−" : "+"}</span>
                     </button>
                     <div id="advanced-controls" hidden={!advanced}>
                       <p className="section-intro">
-                        演出の強さと調査方針。数値でシーンを縛らず、方向性を渡します。
+                        ここの設定は project.json の direction と research に入り、制作エージェントが演出の強さと調査の範囲を決める目安になります。場面の数や長さは指定しません。
                       </p>
                       <div className="row">
                         {select("tempo", "テンポ", [
@@ -1804,7 +1785,7 @@ export default function App() {
             <h2 className="region-head">ジョブの要点</h2>
             <div className="region-body">
                     <div className="job-title">
-                      <h3>{form.title || "まだ名前のない、次の動画。"}</h3>
+                      <h3>{form.title || "タイトル未入力"}</h3>
                     </div>
                     <dl className="job-specs">
                       <div>
@@ -1816,10 +1797,10 @@ export default function App() {
                         <dd>
                           {isMV
                             ? form.musicDurationSec
-                              ? `${form.musicDurationSec.toFixed(2)} sec（音源）`
+                              ? `${form.musicDurationSec.toFixed(2)}秒（音源）`
                               : "音源を選択"
                             : form.durationSec
-                              ? `${form.durationSec} sec`
+                              ? `${form.durationSec}秒`
                               : "—"}
                         </dd>
                       </div>
@@ -1833,8 +1814,7 @@ export default function App() {
                       <div>
                         <dt>資料</dt>
                         <dd>
-                          {sources.length} files / {urlLines(form.urls).length}{" "}
-                          URLs
+                          ファイル {sources.length}件 / URL {urlLines(form.urls).length}件
                         </dd>
                       </div>
                       <div>
@@ -2047,7 +2027,7 @@ export default function App() {
                             </div>
                           </div>
                           <p className="preview-caption">
-                            レイアウトの参考イメージ · 完成映像はOpusが制作
+                            入力に合わせた画面配置の概形です。完成映像は制作エージェントが作ります。
                           </p>
                         </div>
                       )}
@@ -2061,13 +2041,13 @@ export default function App() {
                       )}
                     </div>
                   <div className="handoff-card">
-                    <h3>ZIPを展開して、Opusへ。</h3>
-                    <p>展開したフォルダを開き、この指示を渡すだけ。</p>
+                    <h3>制作エージェントへの指示</h3>
+                    <p>ZIPを展開したフォルダで制作エージェントを起動し、この指示を渡します。字幕帯の「指示をコピー」でクリップボードに入ります。</p>
                     <div className="prompt-box">
                       <p>{agentPrompt}</p>
                     </div>
                     <small className="export-note">
-                      AIの自動実行・動画のレンダリングは行いません。
+                      このWebUIは制作エージェントの実行も動画のレンダリングも行いません。
                     </small>
                   </div>
                       <details className="quality-checklist">
@@ -2081,13 +2061,7 @@ export default function App() {
                           指摘は「時刻・問題・期待する改善」をセットで伝えると、良い部分を壊さずに直せます。
                         </small>
                       </details>
-                    <div className="runtime-tags">
-                      <span>Remotion</span>
-                      <span>React Three Fiber</span>
-                      <span>{isMV ? "Music Video" : "Aivis"}</span>
-                    </div>
                     <div className="ghost-check-viewer">
-                      <span className="eyebrow">GHOST CHECK</span>
                       <h3>レンダーゴースト検査の結果</h3>
                       <p>
                         ローカル（runtime）で{" "}
@@ -2196,7 +2170,7 @@ export default function App() {
             <p className={`band-status ${valid ? "ready" : ""}`}>
               <PixelIcon name={valid ? "validate-ok" : "warning"} />
               <span className="band-line">
-                {valid ? "ジョブを書き出せます" : "企画の必須項目を入力"}
+                {valid ? "ジョブを書き出せます" : "必須項目または設定に不足があります"}
               </span>
               {isMV && (
                 <small>
@@ -2240,7 +2214,7 @@ export default function App() {
             >
               {busy
                 ? `ZIPを生成中… ${progress}%`
-                : "Motion Job ZIPを生成"}
+                : "ジョブのZIPを生成"}
             </button>
             {busy && (
               <progress
@@ -2267,7 +2241,7 @@ export default function App() {
         onClose={() => setInfo(false)}
       >
         <div className="dialog-heading">
-          <span className="eyebrow">ABOUT THE STUDIO</span>
+          <h2>BiimMotion について</h2>
           <button
             className="icon-button"
             type="button"
@@ -2277,14 +2251,8 @@ export default function App() {
             <Icon name="close" />
           </button>
         </div>
-        <h2>
-          動画制作のための、
-          <br />
-          小さな出発点。
-        </h2>
         <p>
-          BiimMakerは企画・資料・演出方針を、外部のAIエージェントへ渡すMotion
-          Job ZIPを作ります。AI API、バックエンド、アカウントは必要ありません。
+          BiimMotion は、動画の企画・資料・演出方針を、制作エージェントへ渡すジョブのZIPにまとめます。AI API、バックエンド、アカウントは必要ありません。
         </p>
         <h3>同梱するもの</h3>
         <p>
