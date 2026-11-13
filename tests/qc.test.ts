@@ -6,7 +6,8 @@ import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { runQC, BIIM_STANDARD } from "../job-template/runtime/scripts/qc.mjs";
-import { createProject, defaults } from "../src/job.ts";
+import { createProject, defaults, switchVideoMode } from "../src/job.ts";
+import { wavBuffer } from "../job-template/runtime/scripts/lib.mjs";
 import { captionBox, candidateCaptionBoxes, fitCaption, textWidth, splitCaptionUnits,
   estimateSpeechSeconds, effectiveStyleMode, effectiveSceneStyle, sceneUsesBiimFrame,
   styleErrors } from "../job-template/runtime/scripts/caption-capacity.mjs";
@@ -268,6 +269,67 @@ test("QC CLI exits 1 on a failed gate, 2 on usage errors, and MV exits 0 without
   }
   await assert.rejects(fs.access(path.join(job.directory, "reports/qc-pre.json")));
   await assert.rejects(fs.access(path.join(job.directory, "reports/qc-post.json")));
+});
+
+async function validationJob(t, style = "biim") {
+  const job = await qcJob(t, style, false);
+  await fs.cp("job-template/runtime/scripts", path.join(job.directory, "runtime/scripts"), { recursive: true });
+  // Execute the installed compiler on a minimal program to isolate record validation.
+  // The complete generated runtime is typechecked by the fixture verification commands.
+  await fs.symlink(path.resolve("node_modules"), path.join(job.directory, "node_modules"), "junction");
+  await job.write("runtime/tsconfig.json", { compilerOptions: { types: [], skipLibCheck: true }, files: ["check.ts"] });
+  await job.write("runtime/check.ts", "export const structuralFixture: number = 1;\n");
+  for (const file of [job.project.layout.frame, ...Object.values(job.project.layout.fonts).map((f) => f.path)].filter(Boolean)) await job.write(file, "fixture asset");
+  for (const file of ["plan/script.md", "plan/storyboard.md", "plan/sources.md", "reports/visual-qa.md", "reports/delivery.md"]) await job.write(file, "Completion record for structural testing. ".repeat(3));
+  const mp4 = Buffer.alloc(2048); mp4.write("ftyp", 4);
+  await job.write("output/preview.mp4", mp4); await job.write("output/final.mp4", mp4);
+  const validate = () => spawnSync(process.execPath, [path.join(job.directory, "runtime/scripts/validate.mjs"), "--final"], { cwd: path.join(job.directory, "runtime"), encoding: "utf8" });
+  return { ...job, validate };
+}
+
+for (const style of ["biim", "anime", "motion", "mixed"]) {
+  test(`validate final ${style} requires explainer design records and scopes note fields`, async (t) => {
+    const job = await validationJob(t, style);
+    if (["anime", "motion"].includes(style)) {
+      delete job.project.scenes[0].note_top; delete job.project.scenes[0].note_bottom;
+    }
+    await job.save();
+    let result = job.validate();
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    if (["biim", "mixed"].includes(style)) {
+      delete job.project.scenes[0].note_top; await job.save();
+      result = job.validate(); assert.equal(result.status, 1); assert.match(result.stderr, /note_top/);
+      job.project.scenes[0].note_top = "要点"; await job.save();
+    }
+    if (style === "biim") {
+      for (const file of ["plan/explanation-map.md", "plan/direction.md", "plan/evidence.json"]) {
+        const content = await fs.readFile(path.join(job.directory, file));
+        await fs.rm(path.join(job.directory, file));
+        result = job.validate(); assert.equal(result.status, 1); assert.ok(result.stderr.replaceAll("\\", "/").includes(file), result.stderr);
+        await job.write(file, content);
+      }
+      await job.write("plan/evidence.json", { sources: null, claims: [], note: "invalid evidence array test" });
+      result = job.validate(); assert.equal(result.status, 1); assert.match(result.stderr, /must be arrays/);
+    }
+    if (style === "mixed") {
+      delete job.project.scenes[1].style; await job.save();
+      result = job.validate(); assert.equal(result.status, 1); assert.match(result.stderr, /scene style/);
+    }
+  });
+}
+
+test("validate final MV retains its original records and does not require explainer records", async (t) => {
+  const job = await validationJob(t);
+  const mv = createProject({ ...switchVideoMode({ ...defaults, title: "MV structural fixture", description: "mv", audience: "developers" }, "mv"), musicDurationSec: 6.25 }, { sources: [], music: { name: "music.wav", size: 600044, data: new Uint8Array(0), type: "audio/wav" } });
+  mv.audio.music = "assets/audio/music.wav";
+  mv.scenes = [{ id: "s1", duration_sec: 6.25 }];
+  await job.write("project.json", mv);
+  await job.write("assets/audio/music.wav", wavBuffer(new Float32Array(48000)));
+  for (const file of ["plan/explanation-map.md", "plan/evidence.json", "plan/script.md"]) await fs.rm(path.join(job.directory, file));
+  await job.write("plan/music-analysis.md", "Music structure analysis for an MV structural fixture. ".repeat(3));
+  let result = job.validate(); assert.equal(result.status, 0, result.stdout + result.stderr);
+  await fs.rm(path.join(job.directory, "plan/music-analysis.md"));
+  result = job.validate(); assert.equal(result.status, 1); assert.match(result.stderr, /music-analysis/);
 });
 test("caption fit counts halfwidth, explicit lines and speech units", () => {
   const box = captionBox(projectFor(), true);
