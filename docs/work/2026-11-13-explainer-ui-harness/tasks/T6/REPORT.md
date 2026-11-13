@@ -106,7 +106,7 @@ CyberSprite の `gui/public/icons/` から `public/icons/` へ4ファイル：
 | C-3 `git diff --check e40adbe...HEAD` | 出力なし |
 | C-4 MV 非退行 | `git diff --exit-code 955fa5c -- tests/ghost.test.ts tests/imagegen.test.ts` は差分なし。`git diff -U0 955fa5c -- tests/job.test.ts \| grep '^-[^-]'` は `-    12,` の1行を出す。これは本タスクの差分ではなく（本タスクは `tests/` を変更していない。`git diff --stat e40adbe...HEAD` に `tests/` は無い）、`<BASE>` 以前から存在する差分。§5.3 の許容行かどうかの判定は L2 に委ねる |
 | C-5 触らない範囲 | `git diff --stat e40adbe...HEAD` の一覧に `src/job.ts`・`src/explainer-assist.ts`・`src/mv-assist.ts`・`src/templates.ts`・`job-template/`・`tests/`・`package.json`・`src/biim-standard.json` は無い |
-| C-6 絶対パス・メール・認証情報 | 1つ目の grep で1件一致：`tasks/T7/DIRECTION.md` の `border(-[a-z]+)*-radius:\s*…` の行（L2 の発注記録のコミット `035378a` の内容。`s:\s` が `[A-Za-z]:[\\]` に一致する誤検出）。本タスクで追加した行には一致なし。2つ目の grep は一致なし |
+| C-6 絶対パス・メール・認証情報 | 1つ目の grep で1件一致：`tasks/T7/DIRECTION.md` の border-radius を検査する grep の行（L2 の発注記録のコミット `035378a` の内容）。その行の `radius:` の直後の文字列がドライブ文字のパターン（英字＋コロン＋バックスラッシュ）に当たる誤検出で、パスではない。本タスクで追加した行には一致なし（初版の本 REPORT はこの正規表現を引用して自身が一致したため、3つ目のコミットで言い換えた）。2つ目の grep は一致なし |
 | C-7 読まないもの | `node_modules/`・`dist/`・`.verification/`・`package-lock.json` の中身は読んでいない（`npm ci` とビルドで生成・更新しただけ。`dist/` は撮影スクリプトが配信しただけ） |
 | C-8 計画の写し | `PLAN.md` と `ORCHESTRATION_PLAN.md` に差分なし、`cmp` で一致 |
 
@@ -120,7 +120,8 @@ CyberSprite の `gui/public/icons/` から `public/icons/` へ4ファイル：
 | コミット | ファイル |
 | --- | --- |
 | `8e60f5b` Restructure the UI shell on the family theme with the four-region layout | `index.html`、`src/App.tsx`、`src/style.css`、`public/icons/{info,validate-ok,warning,error}.png` |
-| （2つ目）Draft docs/DESIGN.md and record CP-A1 screenshots | `docs/DESIGN.md`、`docs/work/2026-11-13-explainer-ui-harness/screenshots/cp-a1/S1-explainer-initial-1440.png`・`S3-mv-filled-1440.png`、本 REPORT.md |
+| `7f10030` Draft docs/DESIGN.md and record CP-A1 screenshots | `docs/DESIGN.md`、`docs/work/2026-11-13-explainer-ui-harness/screenshots/cp-a1/S1-explainer-initial-1440.png`・`S3-mv-filled-1440.png`、本 REPORT.md |
+| （3つ目）Reword the C-6 note in the T6 report | 本 REPORT.md のみ（C-6 の記述が検査の正規表現を引用して自身が一致したため言い換え。履歴を書き換えないよう追加のコミットにした） |
 
 ## 7. 判断したこと（既定の判断で進めたもの）
 
