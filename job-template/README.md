@@ -22,6 +22,8 @@ npm run validate -- --final # 成果物・シーン目録・QA記録の検査
 npm run ghost-check    # final.mp4のレンダーゴースト走査（1フレーム要素の検出）
 npm run ghost-check -- --target=preview # preview.mp4にも同じ走査（final前の早期検出）
 npm run ghost-check -- --double-render # 同一コードでもう1本レンダーして全フレーム照合
+npm run qc -- --stage=pre   # 解説動画の事前ゲート（実装・音声合成の前）
+npm run qc -- --stage=post  # 解説動画の事後ゲート（final・納品記録の後）
 ```
 
 ghost-checkの結果はreports/ghost-check(-preview).md（人用）・.json（機械可読、WebUIで開ける）と、指摘フレーム前後の静止画reports/ghost-stills/に出力されます。検出は「孤立フラッシュ（ゴースト嫌疑、全部を静止画で照合）」と「連続クラスタ（転換・高速動作に多く、代表確認で可）」に分類されます。
@@ -41,9 +43,50 @@ MVの制作原則（思想先的設計、歌詞の視覚化、密度と変化率
 
 WebUIでは01〜03で入力し、04・05・演出と調査の詳細は非表示です。追加Web調査は無効で、提供資料と参考URLを利用します。完成後は通常動画と同じくvalidate・preview・映像音響QA・build・validate --finalを実行します。最終検査の台本記録はMVではplan/music-analysis.mdになります。
 
+## 解説動画の制作（project.mode="explanation"）
+
+解説動画は、視聴者に何かを理解させるための動画です。brief.md、sources、`direction.takeaway`（理解ゴール）・`direction.prior_knowledge`（前提知識と想定される誤解）・`direction.outline` / `plan/outline.txt`（構成メモ）があればそれらを基に、台本・根拠・図解・キャラの演技・音声を組み立てます。Aivis音声と、設定に応じた簡単なBGM・SEの生成が有効です。
+
+制作原則（理解先的設計、説明構造の翻訳、方向性3案と6軸、スタイルと演者の一貫性、制作工程14ステップ、事前・事後QC、失敗パターン23項目）はAGENTS.mdの「解説動画モード」章にあります。`direction.differentiation`の差別化メモも方向性の決定で考慮します。
+
+### 様式モード
+
+`direction.style_mode`で動画の様式を選びます。既定は`biim`ですが必須ではありません。
+
+| style_mode | 様式 |
+| --- | --- |
+| `biim` | 黒い枠の中に映像、右上と右下に要点と補足、下に字幕を置く従来の形式（biim-standard-v1） |
+| `anime` | 枠を使わず画面全体で、キャラクターの演技と掛け合いを中心に説明する |
+| `motion` | 枠を使わず画面全体で、図形・文字・図解の動きを中心に説明する。キャラクターは任意 |
+| `mixed` | Biim形式の場面とアニメ解説・モーション解説の場面を1本の中で切り替える（横向きのみ）。場面ごとの様式を`plan/storyboard.md`の`様式:`と`project.json`の`scenes[].style`に同じ値で書く |
+
+Biimの枠・ノート・字幕の標準はBiim様式の場面にだけ適用します。`anime`／`motion`の場面は`scenes[].biim=false`とし、字幕は全画面の字幕領域の標準字幕になります。motion-kitの`FullscreenStage`・`StandardCaption`・`DiagramStage`は非Biimの場面向けの任意の部品です。
+
+### 記録ファイル
+
+| パス | 内容 | 工程 |
+| --- | --- | --- |
+| `plan/sources.md`・`plan/evidence.json` | 出典一覧と根拠台帳（`sources`と`claims`、IDを揃える） | 1・4 |
+| `plan/explanation-map.md` | 理解ゴール・前提知識・想定される誤解・主張の一覧・山場・扱わない範囲 | 2 |
+| `plan/direction.md` | 方向性の3案・採用と理由・スタイル定義 | 3 |
+| `plan/script.md` | 台本（事実主張に根拠ID、`## 読み`） | 4 |
+| `plan/storyboard.md` | 場面ごとの説明目的・構造型・画面状態・様式・レイアウト・根拠IDなど | 5 |
+| `reports/qc-pre.*`・`reports/qc-post.*` | `npm run qc`の判定（JSONと人が読むMarkdown） | 6・13 |
+| `reports/qc-review.md` | 台本を書いたのとは別のコンテキストによるレビュー行と`review_mode` | 6・13 |
+| `reports/visual-qa.md` | 指摘と修正の記録、ゴースト走査の照合行（`- GHOST final f412: 意図した表示 — …`） | 11〜13 |
+| `reports/delivery.md` | 実際の尺・出典リスト・チャプター・未生成素材 | 14 |
+
+書き方の例は`plan/templates/`にあります（`explanation-map.md`、`direction-explainer.md`、`storyboard-explainer.md`、`evidence.example.json`、`qc-review.md`）。ひな形は検査対象のパスに置いていないので、写して使います。`EXAMPLE`で始まるIDが残っていると事前ゲートは不合格になります。
+
+### QCコマンドとゲートの意味
+
+`npm run qc -- --stage=pre`はシーン実装・音声合成の前に、`npm run qc -- --stage=post`はfinal・納品記録の後に実行します。結果は`reports/qc-<stage>.json`と`.md`に出力され、不合格なら終了コード1です。
+
+ゲート（合否）にするのは、客観的に判定でき、外すと視聴者に実害が出るもの（誤情報、読めない字幕、切れる音声、未確認のままの納品、記録の欠落）だけです。機械判定（記録の構造、根拠台帳、字幕帯域、ストーリーボードの様式、Biim場面の標準、ナレーション同期、ゴースト走査の実施と照合、納品記録）と、`reports/qc-review.md`のレビュー判定（台本と根拠の整合、数値・数式の正確さ、字幕の実表示、通し視聴、図と読み上げの一致）の両方が合格して`verdict`が`pass`になります。面白さ・演出の巧拙・テンポなどの主観的な質は助言で、合否に入りません。ゴースト走査の検出件数も助言です。免除はオーナーだけが`reports/qc-review.md`の免除節に書けます。MVジョブで`npm run qc`を実行しても検査は行いません。
+
 ## 解説動画のBiimSlideMaker互換の場面テキスト
 
-project.jsonのscenesはOpusが記入します。枠の右上・右下・字幕と読み上げの役割をそのまま維持します。
+project.jsonのscenesはOpusが記入します。この節はBiim様式の場面（`biim`、`mixed`のBiim区間）の書き方です。枠の右上・右下・字幕と読み上げの役割をそのまま維持します。
 
 ```json
 {"id":"scene001","note_top":"光は色ごとに曲がり方が違う","note_bottom":"雨粒に入った光は屈折し、色ごとに異なる方向へ進みます。これが分散です。","script":"虹は、太陽の光が色ごとに分かれて見える現象です。","duration_sec":6}
@@ -156,7 +199,7 @@ export const CharacterMotionExample = ({ scene }: { scene: BiimSceneData }) => {
 - assets/: GLB、添付BGM、音声・SEなど。runtimeの各コマンドがruntime/public/assetsへ同期し、staticFile('assets/…')で使用する。編集元はassets/。public内のコピーは直接編集しない。
 - scenes/: シーンのReact/TSX。設計は自由。index.tsxでメイン映像と全体尺をexportする。
 - motion-kit/: 任意使用の12コンポーネント（lyric-fit.tsの補助関数を含む）。LyricLineは秒指定の行単位歌詞（末尾まで保持・幅に収める）、LyricPunchは語ごとのタイムスタンプで打ち込む巨大歌詞（構図領域を指定）。既定値のまま作品の見た目にせず調整する。Character3DはGLBのフィット・アニメーションのフレーム同期を補助する。口パク・リターゲットはモデルに合わせて追加実装する。
-- plan/: 台本、ストーリーボード、ナレーション、音響プラン、出典。
+- plan/: 台本、ストーリーボード、ナレーション、音響プラン、出典。解説動画では理解設計・方向性・根拠台帳も置く。plan/templates/は記録のひな形（検査対象ではない）。
 - reports/: 視覚・音響QAと納品レポート。output/: preview / final。
 
 ## ナレーション
