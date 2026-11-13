@@ -3,3 +3,4 @@ dist/
 .verification/
 *.tsbuildinfo
 *.log
+.agent-work/
