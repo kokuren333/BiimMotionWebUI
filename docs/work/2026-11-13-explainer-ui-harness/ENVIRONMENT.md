@@ -42,3 +42,14 @@
 | 日時（JST） | タスク | 層 | 製品／モデル／effort | サブエージェント | コマンド実行 | 対話 | ネットワーク | Chrome | 縮退レベル | 備考 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 | 計画 | L2 | Claude Code／Opus 5.5／high | 可 | 可 | 不可 | 未確認 | 未確認 | 0 | 本セッション |
+| 2026-11-13 | T0 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功、Pages HTTP 200） | 可（Chrome 157、`--headless=new`） | 0 | Node v24.15.0。Aivis・GPU 不要。G4-α で `tasks/T0/REPORT.md` §1 から集約 |
+| 2026-11-13 | T2 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T2/REPORT.md` §1 から集約 |
+| 2026-11-13 | T1 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | 着手前ベースライン29件合格。G4-α で `tasks/T1/REPORT.md` §1 から集約 |
+| 2026-11-13 | T4 | L3 実働 B | Codex／`gpt-6.1-sol`（指定値）／high | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T4/REPORT.md` 冒頭から集約 |
+| 2026-11-13 | T3 | L3 実働 A | Claude Code 2.1.319／Opus 5.5／medium | 提示あり（未使用） | 可 | 不可 | npm 可、Pages 未確認 | 未確認（不要） | 0 | G4-α で `tasks/T3/REPORT.md` §0 から集約 |
+| 2026-11-13 | T5 | L3 実働 B | Codex／`gpt-6.1-sol`（指定値）／high | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 実行ファイルあり | 0 | G4-α で `tasks/T5/REPORT.md` 冒頭から集約 |
+| 2026-11-13 | T5b | L3 実働 B | Codex／`gpt-6.1-sol`（指定値）／high | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T5b/REPORT.md` 冒頭から集約 |
+| 2026-11-14 | T5-4 | L3 実働 B | Codex／`gpt-6.1-sol`（指定値）／high | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 可（Chrome 157、撮影で確認） | 0 | G4-α で `tasks/T5-4/REPORT.md` 冒頭から集約 |
+| 2026-11-14 | T8a | L3 実働 A | Claude Code／Opus 5.5／medium | 提示あり（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T8a/REPORT.md` §0 から集約 |
+| 2026-11-14 | T9a | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T9a/REPORT.md` から集約 |
+| 2026-11-14 | G4-α 統合 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ping` 応答） | 実行ファイルあり（Chrome・Edge） | 0 | GPU（RTX 3080）あり。自己判定になるゲートなし（G3 は L2）。詳細は `tasks/G4-alpha/REPORT.md` |
