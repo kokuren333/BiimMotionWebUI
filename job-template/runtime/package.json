@@ -10,6 +10,7 @@
     "still": "node scripts/run.mjs still",
     "build": "node scripts/run.mjs build",
     "validate": "node scripts/validate.mjs",
+    "qc": "node scripts/qc.mjs",
     "ghost-check": "node scripts/ghost-check.mjs",
     "voice": "node scripts/aivis.mjs",
     "sound": "node scripts/sound-design.mjs",

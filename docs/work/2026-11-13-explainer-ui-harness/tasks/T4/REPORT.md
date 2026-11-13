@@ -14,3 +14,13 @@
 契約 §6 の export と `.d.mts` を追加。式・係数・様式判定を import のない単一 ES モジュールに集約。字幕は半角幅と明示改行を評価し、超過は分割で直す。係数は暫定値として `VERIFICATION.md` 末尾に記録。
 
 T4-1 完了。`npm test`: 32 tests / 32 pass / 0 fail。`npm run build -- --base=/BiimMotionWebUI/`: exit 0（87 modules、既存の chunk size 助言あり）。`git diff --check`: 出力なし。L2 はこのコミットから T5 を発注可能。T4-2 以降も本 worktree で継続する。
+
+コミット: `15b42a7`。T1 worktree の HEAD は `8d8ba75`、契約の blob はそのコミットの blob と一致していることも確認した。
+
+## T4-2 QC コマンド
+
+PRE-1〜8、POST-1〜8（POST-4R・POST-5R を含む）、JSON/Markdown 出力、検査入力の SHA-256、規則版、様式・scope、レビュー読取、免除を実装。post の構造検査は実際に `validate --final` を子プロセスで実行する。ghost 検出件数は助言であり、preview・final 双方の全件照合と残存ゴーストの解消をゲートにした。音声なしの自動字幕・同期検査は対象外。
+
+`npm test`: 47 tests / 47 pass / 0 fail。`npm run build -- --base=/BiimMotionWebUI/`: exit 0。QC 単独18件で合否・様式・免除・MV・事後同期・走査鮮度・照合欠落・通し視聴未確認・納品記録欠落を表明。POST-1 の単体テストは子プロセス起動と終了コードをスタブで確認し、実際の validate は T4-3 と展開フィクスチャで別途検証する。
+
+免除の書き手本人は機械認証できないため、契約どおりオーナー専用節にある行だけを読む。節外のエージェント免除は無効。実装がレビュー行や免除行を書き込むことはない。テストのチェック・免除記録は一時フォルダ内の合成データ。
