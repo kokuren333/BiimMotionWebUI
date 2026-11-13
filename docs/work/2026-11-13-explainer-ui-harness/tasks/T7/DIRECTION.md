@@ -24,7 +24,7 @@
 ## 作業ブランチと基準コミット
 
 - あなたの repo ルートは、この DIRECTION.md がある worktree です。ブランチは `task/T7-ui-full` で、第2波ブランチ `feat/ui-biim-frame`（T6 取り込み後）から分岐済みのはずです。**ブランチを切り替えないこと**。
-- `<BASE>` は発注時に L2 が確定します（T6 取り込み後の第2波ブランチの先端）。**本書に実ハッシュの追記が無い場合は、作業を始めず REPORT.md に書いて止まること**。検証コマンドの `git diff <BASE>...HEAD` にはその値を使うこと。
+- `<BASE>` は `15dbbb4` です（T6 取り込み後の第2波ブランチ `feat/ui-biim-frame` の先端。マージコミット `Merge task/T6-ui-base: family theme UI shell and DESIGN draft`）。検証コマンドの `git diff <BASE>...HEAD` にはその値を使うこと。
 - コミットは計画書 §5.4 の流儀（英語・命令形の件名、1コミット＝1つの論理的変更、**UI の見た目の変更とロジックの変更を混ぜない**、各コミットで C-1・C-2 が通ること）。件名の例（§5.4 #20〜。favicon の件名は Amendment 03 の様式に合わせてよい）：`Rewrite styles to the design rules`／`Replace decorative labels and copy with factual text`／`Draw the favicon as a pixel icon of the Biim frame motif`／`Record post-redesign screenshots`。コミットメッセージの末尾に規定の帰属行を付けること（書式は過去のコミットの末尾を参照。ファイルには書かない）。
 - **push はしないこと**。main へのマージ・直接 push・強制 push は禁止。スペース版（S0〜S5）には触れないこと。
 
@@ -77,7 +77,8 @@ grep -nE "MOTION JOB STUDIO|WORKSPACE|YOUR BRIEF|FROM IDEA TO MOTION|LOCAL ONLY|
 grep -nE "伝えたいことを|あとはOpusへ|構成も、演出も|制作のバトン|まだ名前のない|小さな出発点|まずは、動画のゴール|細部を決めすぎず" src/App.tsx index.html   # 空であること
 # UI-C2
 grep -nE "box-shadow|gradient|blur" src/style.css                                       # フォーカス表示以外が無いこと
-grep -noE "border(-[a-z]+)*-radius:\s*[^;]+" src/style.css | grep -vE "radius:\s*(0|2px|50%)$"   # 空であること
+grep -noE "border(-[a-z]+)*-radius:[[:space:]]*[^;]+" src/style.css | grep -vE "radius:[[:space:]]*(0|2px|50%)$"   # 空であること
+# 注意：`\s` を `[[:space:]]` に書き換えた。`radius:\s` は「s・コロン・バックスラッシュ」の並びを含み、C-6 のドライブ文字パターンに誤検出されるため（T6 の G3 で判明）。意味は同じ。
 grep -nE "font(-size)?:[^;]*(^|[^0-9.])([0-9]|1[01])(\.[0-9]+)?px" src/style.css       # 12px 未満が無いこと（13.5px などの小数は一致しない）
 grep -nE "font(-size)?:[^;]*[0-9.]+r?em\b" src/style.css                                 # 空であること（文字の大きさは px で書く規則を DESIGN.md に置く）
 # UI-C3
