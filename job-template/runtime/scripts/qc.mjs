@@ -37,8 +37,11 @@ const blocks = (text, level = 2) => {
     return [{ title: match[2].trim(), body: lines.slice(i + 1, end).join("\n") }];
   });
 };
-const section = (text, name) => blocks(text).find((block) =>
-  block.title === name || block.title.startsWith(name + "（") || block.title.startsWith(name + "("));
+const section = (text, name) => {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const title = new RegExp(`^${escaped}(?:\\s*[（(].*[)）])?\\s*$`);
+  return blocks(text).find((block) => title.test(block.title));
+};
 function headings(text, names) {
   for (const name of names) requireThat(nonempty(section(text, name)?.body), `Missing or empty heading: ${name}`);
 }
@@ -78,7 +81,7 @@ export async function runQC({ jobRoot = root, stage, project: suppliedProject } 
   const reviewMode = review.match(/^review_mode:(?:\s*)(independent|self)\s*$/m)?.[1] ?? "self";
   if (!/^review_mode:(?:\s*)(independent|self)\s*$/m.test(review)) advise("ADV-REVIEW-1", "review_mode missing; recorded as self");
   const waiverLines = section(review, "免除（オーナー記入）")?.body ?? "";
-  const waiversById = new Map([...waiverLines.matchAll(/^- WAIVE ((?:PRE|POST)-[0-9]+R?)[:：][ \t]*(\S.*)$/gm)].map((m) => [m[1], m[2]]));
+  const waiversById = new Map([...waiverLines.matchAll(/^- WAIVE ((?:PRE|POST)-[0-9]+R?)[:：][^\S\r\n]*(\S.*)$/gm)].map((m) => [m[1], m[2]]));
   const waivers = [];
   const gate = async (id, title, fn, kind = "machine", scope = "all") => {
     let result;
@@ -96,7 +99,7 @@ export async function runQC({ jobRoot = root, stage, project: suppliedProject } 
     return result;
   };
   const reviewGate = (id, title, extra = () => {}) => gate(id, title, () => {
-    requireThat([...review.matchAll(/^- \[([ xX])\] ((?:PRE|POST)-[0-9]+R?)[:：][ \t]*(\S.*)$/gm)]
+    requireThat([...review.matchAll(/^- \[([ xX])\] ((?:PRE|POST)-[0-9]+R?)[:：][^\S\r\n]*(\S.*)$/gm)]
       .some((m) => m[2] === id && /[xX]/.test(m[1])), `Missing checked review line: ${id}`);
     return extra();
   }, "review");
@@ -266,7 +269,7 @@ export async function runQC({ jobRoot = root, stage, project: suppliedProject } 
         const report = await json(name);
         requireThat(report.kind === "biim-ghost-check" && Array.isArray(report.isolated), "Missing or invalid ghost scan: " + target);
         if (target === "final") requireThat((await fs.stat(filePath(name))).mtimeMs >= finalStat.mtimeMs, "Final ghost scan is older than final.mp4");
-        const records = [...clean(qa).matchAll(/^- GHOST (final|preview) f?([0-9]+)[:：][ \t]*(ゴースト|意図した表示|誤検出)([ \t].*)?\r?$/gm)];
+        const records = [...clean(qa).matchAll(/^- GHOST (final|preview) f?([0-9]+)[:：][^\S\r\n]*(ゴースト|意図した表示|誤検出)([^\S\r\n].*)?\r?$/gm)];
         for (const event of report.isolated) {
           requireThat(Number.isSafeInteger(event.frame) && event.frame >= 0, "Invalid isolated frame");
           requireThat(records.some((m) => m[1] === target && Number(m[2]) === event.frame), `Record isolated flash: ${target} f${event.frame}`);

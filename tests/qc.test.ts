@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { test } from "node:test";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -152,6 +152,17 @@ test("QC uses narration overrides, ignores comment-only headings and rejects inc
   job.project.scenes[1].biim = true;
   await job.save();
   assert.equal(status(await job.run(), "PRE-7"), "fail");
+});
+
+test("QC accepts contract heading annotations with spaces and rejects empty review text", async (t) => {
+  const job = await qcJob(t);
+  const map = await fs.readFile(path.join(job.directory, "plan/explanation-map.md"), "utf8");
+  await job.write("plan/explanation-map.md", map.replace("## 理解ゴール", "## 理解ゴール （1〜3文）"));
+  assert.equal(status(await job.run(), "PRE-1"), "pass");
+  await job.write("reports/qc-review.md", "review_mode: self\n- [x] PRE-4:\n- [x] PRE-5: accuracy checked\n");
+  const result = await job.run();
+  assert.equal(status(result, "PRE-4"), "fail");
+  assert.equal(status(result, "PRE-5"), "pass");
 });
 
 test("QC Biim standard constants match the repository standard", async () => {
@@ -331,6 +342,38 @@ test("validate final MV retains its original records and does not require explai
   await fs.rm(path.join(job.directory, "plan/music-analysis.md"));
   result = job.validate(); assert.equal(result.status, 1); assert.match(result.stderr, /music-analysis/);
 });
+
+test("fixture CLI generates all styles, isolated failure modes and unchanged MV behavior under --out", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "biim-qc-fixtures-"));
+  t.after(async () => {
+    assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir()) + path.sep));
+    await fs.rm(directory, { recursive: true, force: true });
+  });
+  const generate = (name, ...args) => {
+    const out = path.join(directory, "output with spaces", name);
+    const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/make-fixture.ts", ...args, `--out=${out}`], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    return path.join(out, "smoke-video");
+  };
+  for (const style of ["biim", "anime", "motion", "mixed"]) {
+    const folder = generate(style, `--style=${style}`, "--qc=pass");
+    const result = await runQC({ jobRoot: folder, stage: "pre" });
+    assert.equal(result.verdict, "pass", JSON.stringify(result.gates));
+    assert.equal(result.style_mode, style);
+  }
+  for (const [failure, gate] of [["fail-evidence", "PRE-3"], ["fail-caption", "PRE-6"], ["fail-review", "PRE-4"]]) {
+    const folder = generate(failure, "--style=mixed", `--qc=${failure}`);
+    const result = await runQC({ jobRoot: folder, stage: "pre" });
+    assert.equal(result.verdict, "fail");
+    assert.deepEqual(result.gates.filter((g) => g.status === "fail").map((g) => g.id), [gate]);
+  }
+  const mv = generate("mv", "--mv");
+  const result = spawnSync(process.execPath, [path.join(mv, "runtime/scripts/qc.mjs")], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  await assert.rejects(fs.access(path.join(mv, "reports/qc-pre.json")));
+  const invalid = spawnSync(process.execPath, ["--experimental-strip-types", "tools/make-fixture.ts", "--style=unknown", `--out=${directory}`], { encoding: "utf8" });
+  assert.equal(invalid.status, 1);
+});
 test("caption fit counts halfwidth, explicit lines and speech units", () => {
   const box = captionBox(projectFor(), true);
   assert.equal(textWidth("あAｱ"), 2);
@@ -354,6 +397,10 @@ test("style helpers preserve old jobs and require explicit mixed scene assignmen
   project.scenes[0].biim = false;
   assert.deepEqual(styleErrors(project), []);
   assert.equal(sceneUsesBiimFrame(project, project.scenes[0]), false);
+  project.scenes[0].style = null;
+  assert.ok(styleErrors(project).length);
+  project.scenes[0].style = "motion";
+  project.direction.style_mode = null;
+  assert.ok(styleErrors(project).length);
   assert.doesNotMatch(await fs.readFile("job-template/runtime/scripts/caption-capacity.mjs", "utf8"), /^import\s/m);
 });
-

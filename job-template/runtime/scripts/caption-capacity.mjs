@@ -7,10 +7,10 @@ export const BIIM_NO_CHARACTER_WIDTH_RATIO = 0.94;
 export const SPEECH_CHARS_PER_SEC = 6.0;
 
 export function effectiveStyleMode(project) {
-  return project.direction.style_mode ?? "biim";
+  return project.direction.style_mode === undefined ? "biim" : project.direction.style_mode;
 }
 export function effectiveSceneStyle(project, scene) {
-  return scene?.style ?? (effectiveStyleMode(project) === "mixed" ? undefined : effectiveStyleMode(project));
+  return scene?.style !== undefined ? scene.style : (effectiveStyleMode(project) === "mixed" ? undefined : effectiveStyleMode(project));
 }
 export function sceneUsesBiimFrame(project, scene) {
   return project.layout.mode !== "fullscreen" && project.video.width >= project.video.height &&
