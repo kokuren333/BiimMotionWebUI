@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -44,98 +45,60 @@ import {
   scriptStats,
 } from "./explainer-assist";
 
-function Icon({
-  name,
-  size = 20,
-}: {
-  name:
-    | "play"
-    | "arrow"
-    | "download"
-    | "file"
-    | "layers"
-    | "sliders"
-    | "check"
-    | "plus"
-    | "close"
-    | "copy"
-    | "shield"
-    | "box";
-  size?: number;
-}) {
-  const paths = {
-    play: <path d="m9 5 11 7-11 7Z" />,
-    arrow: (
-      <>
-        <path d="M4 12h16M14 6l6 6-6 6" />
-      </>
-    ),
-    download: (
-      <>
-        <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
-      </>
-    ),
-    file: (
-      <>
-        <path d="M14 3H5v18h14V8Z" />
-        <path d="M14 3v5h5M8 13h8M8 17h5" />
-      </>
-    ),
-    layers: (
-      <>
-        <path d="m12 3 10 6-10 6L2 9Zm-10 11 10 6 10-6M2 18l10 6 10-6" />
-      </>
-    ),
-    sliders: (
-      <>
-        <path d="M4 6h16M4 12h16M4 18h16" />
-        <path d="M8 3v6m8 0v6m-6 0v6" />
-      </>
-    ),
-    check: <path d="m5 12 4 4L19 6" />,
-    plus: <path d="M12 5v14M5 12h14" />,
-    close: <path d="m6 6 12 12M6 18 18 6" />,
-    copy: (
-      <>
-        <rect x="8" y="8" width="12" height="13" rx="2" />
-        <path d="M15 8V3H3v13h5" />
-      </>
-    ),
-    shield: (
-      <>
-        <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" />
-        <path d="m8 12 3 3 5-6" />
-      </>
-    ),
-    box: (
-      <>
-        <path d="m12 2 9 5v10l-9 5-9-5V7Zm-9 5 9 5 9-5M12 12v10M7 4.8l9 5" />
-      </>
-    ),
-  };
+/** Family theme notch: a 45° pixel cut on the top-left corner of a region
+ * (same shape as the CyberSprite panel notch, 10px cut with a 2px line). */
+function Notch() {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {paths[name]}
+    <svg className="notch" width={11} height={11} aria-hidden="true">
+      <path
+        className="notch-out"
+        d="M0 0h10v1h-10zM0 1h9v1h-9zM0 2h8v1h-8zM0 3h7v1h-7zM0 4h6v1h-6zM0 5h5v1h-5zM0 6h4v1h-4zM0 7h3v1h-3zM0 8h2v1h-2zM0 9h1v1h-1z"
+      />
+      <path
+        className="notch-halo"
+        d="M10 0h1v1h-1zM9 1h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM6 4h1v1h-1zM5 5h1v1h-1zM4 6h1v1h-1zM3 7h1v1h-1zM2 8h1v1h-1zM1 9h1v1h-1zM0 10h1v1h-1z"
+      />
+      <path
+        className="notch-line"
+        d="M10 1h1v1h-1zM9 2h2v1h-2zM8 3h2v1h-2zM7 4h2v1h-2zM6 5h2v1h-2zM5 6h2v1h-2zM4 7h2v1h-2zM3 8h2v1h-2zM2 9h2v1h-2zM1 10h2v1h-2z"
+      />
     </svg>
   );
 }
 
+/** 16×16 pixel icon copied from the family icon set (public/icons/). */
+function PixelIcon({
+  name,
+}: {
+  name:
+    | "info"
+    | "validate-ok"
+    | "warning"
+    | "error"
+    | "folder"
+    | "sources"
+    | "add"
+    | "remove"
+    | "settings"
+    | "agent";
+}) {
+  return (
+    <img
+      className="ico"
+      src={`${import.meta.env.BASE_URL}icons/${name}.png`}
+      width={16}
+      height={16}
+      alt=""
+    />
+  );
+}
+
 const sections = [
-  { id: "concept", title: "動画の企画", caption: "CONCEPT" },
-  { id: "sources", title: "参考資料と指示", caption: "SOURCES" },
-  { id: "direction", title: "デザイン方向性", caption: "DIRECTION" },
-  { id: "character", title: "キャラクター", caption: "CHARACTER" },
-  { id: "voice", title: "音声と出力", caption: "VOICE & OUTPUT" },
+  { id: "concept", title: "動画の企画" },
+  { id: "sources", title: "参考資料と指示" },
+  { id: "direction", title: "デザイン方向性" },
+  { id: "character", title: "キャラクター" },
+  { id: "voice", title: "音声と出力" },
 ];
 const sizeLabel = (size: number) =>
   size < 1024 * 1024
@@ -151,10 +114,7 @@ function Section({ index, children }: { index: number; children: ReactNode }) {
     <section className="form-section" id={section.id}>
       <div className="section-heading">
         <span className="section-number">0{index + 1}</span>
-        <div>
-          <span className="eyebrow">{section.caption}</span>
-          <h2>{section.title}</h2>
-        </div>
+        <h2>{section.title}</h2>
       </div>
       {children}
     </section>
@@ -172,20 +132,18 @@ function AttachmentList({
     <ul className="attachments">
       {files.map((file, i) => (
         <li key={`${i}-${file.name}`}>
-          <span className="attachment-icon">
-            <Icon name="file" size={18} />
-          </span>
           <div>
             <strong title={file.name}>{file.name}</strong>
             <small>{sizeLabel(file.size)}</small>
           </div>
           <button
             type="button"
-            className="icon-button"
+            className="small-button"
             aria-label={`${file.name}を削除`}
             onClick={() => remove(i)}
           >
-            <Icon name="close" size={16} />
+            <PixelIcon name="remove" />
+            削除
           </button>
         </li>
       ))}
@@ -484,7 +442,7 @@ export default function App() {
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       setSuccess(
-        `${result.filename} を生成しました。展開してOpusへ渡してください。`,
+        `${result.filename} を生成しました。展開したフォルダを制作エージェントに渡してください。`,
       );
     } catch (error) {
       setErrors([
@@ -500,7 +458,7 @@ export default function App() {
       setCopyStatus("コピーしました");
     } catch {
       setCopyStatus(
-        "コピーできませんでした。下の指示を選択してコピーしてください。",
+        "コピーできませんでした。右下の「制作エージェントへの指示」を選択してコピーしてください。",
       );
     }
   }
@@ -577,114 +535,57 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="#concept" aria-label="BiimMaker トップ">
-          <span className="brand-symbol">
-            <Icon name="play" size={22} />
-          </span>
-          <span>
-            BiimMaker<small>MOTION JOB STUDIO</small>
-          </span>
+      <header className="app-bar">
+        <a className="brand" href="#concept" aria-label="BiimMotion トップ">
+          BiimMotion
         </a>
-        <div className="workspace-label">
-          WORKSPACE <span>01</span>
-        </div>
-        <div className="workspace-current">
-          <Icon name="layers" size={18} />
-          動画ジョブを作成
-          <span className="status-dot" />
-        </div>
-        <div className="nav-label">YOUR BRIEF</div>
-        <nav aria-label="入力セクション">
-          {(isMV ? sections.slice(0, 3) : sections).map((section, i) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className={active === section.id ? "active" : ""}
-              aria-current={active === section.id ? "location" : undefined}
-            >
-              <span className={`nav-number ${completed[i] ? "done" : ""}`}>
-                {completed[i] ? <Icon name="check" size={13} /> : `0${i + 1}`}
-              </span>
-              {section.title}
-              <span className="nav-arrow">↗</span>
-            </a>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="local-note">
-            <Icon name="shield" size={18} />
-            <span>
-              あなたのブラウザで完結<small>資料のアップロードは不要です</small>
-            </span>
-          </div>
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => setInfo(true)}
-          >
-            このスタジオについて <span>↗</span>
-          </button>
-          <small className="version">BiimMakerWebUI · v0.1</small>
-        </div>
-      </aside>
+        <h1 className="app-task">動画ジョブを作成</h1>
+        <span className="local-note">
+          入力と添付はブラウザ内で処理し、送信しません
+        </span>
+        <button
+          type="button"
+          className="text-button about-button"
+          onClick={() => setInfo(true)}
+        >
+          <PixelIcon name="info" />
+          BiimMotion について
+        </button>
+        <small className="version">BiimMotion · v0.1</small>
+      </header>
 
-      <div className="workspace">
-        <header className="topbar">
-          <span>
-            Workspace <span className="breadcrumb-slash">/</span>{" "}
-            <strong>New motion job</strong>
-          </span>
-          <span className="local-badge">
-            <span className="status-dot" />
-            LOCAL ONLY
-          </span>
-        </header>
-        <main>
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                <span className="tiny-square" />
-                FROM IDEA TO MOTION
-              </div>
-              <h1>
-                伝えたいことを、
-                <br />
-                <span>動きのある動画へ。</span>
-              </h1>
-              <p>
-                企画と資料をまとめて、映像制作の準備を。
-                <br />
-                構成も、演出も、実装も。あとはOpusへ。
-              </p>
-            </div>
+      <form className="studio" onSubmit={submit} noValidate>
+        <main className="region region-main">
+          <Notch />
+          <div className="toc-bar">
+            <nav className="toc" aria-label="入力セクション">
+              {(isMV ? sections.slice(0, 3) : sections).map((section, i) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className={active === section.id ? "active" : ""}
+                  aria-current={active === section.id ? "location" : undefined}
+                >
+                  <span className={`toc-number ${completed[i] ? "done" : ""}`}>
+                    0{i + 1}
+                  </span>
+                  {section.title}
+                  <span className="toc-mark" aria-hidden="true">
+                    {completed[i] ? "✓" : ""}
+                  </span>
+                  {completed[i] && <span className="sr-only">（入力済み）</span>}
+                </a>
+              ))}
+            </nav>
             <button
               type="button"
               className="sample-button"
               disabled={busy}
               onClick={sample}
             >
-              <Icon name="plus" size={16} />
               30秒のサンプルを入力
             </button>
           </div>
-          <div className="pipeline" aria-label="制作の流れ">
-            <div className="pipeline-step current">
-              <span>01</span>企画をつくる
-            </div>
-            <Icon name="arrow" size={17} />
-            <div className="pipeline-step">
-              <span>02</span>Job ZIPを書き出す
-            </div>
-            <Icon name="arrow" size={17} />
-            <div className="pipeline-step">
-              <span>03</span>Opusが動画を制作
-            </div>
-            <span className="pipeline-end">.mp4</span>
-          </div>
-
-          <form onSubmit={submit} noValidate>
-            <div className="editor-grid">
               <fieldset className="form-body" disabled={busy}>
                 <Section index={0}>
                   <label>
@@ -706,9 +607,6 @@ export default function App() {
                         : "企画・資料を基に、音声と映像を制作します。"}
                     </small>
                   </label>
-                  <p className="section-intro">
-                    まずは、動画のゴールを決めましょう。
-                  </p>
                   <label>
                     動画タイトル <em>必須</em>
                     <input
@@ -735,7 +633,7 @@ export default function App() {
                     />
                     {isMV && (
                       <small>
-                        何を表現するかが先、作り方は後。演出の判断基準になります。
+                        brief.md の「表現したいこと」に入り、制作エージェントが演出を選ぶ基準になります。
                       </small>
                     )}
                   </label>
@@ -782,6 +680,7 @@ export default function App() {
                           onChange={(e) => field("takeaway", e.target.value)}
                           placeholder="視聴後に、視聴者が言えること・できること。"
                         />
+                        <small>brief.md の「理解ゴール」と project.json の direction.takeaway に入り、構成を決める基準になります。</small>
                       </label>
                       <label>
                         前提知識と想定される誤解
@@ -791,6 +690,7 @@ export default function App() {
                           onChange={(e) => field("priorKnowledge", e.target.value)}
                           placeholder="すでに知っていること、説明が必要なこと、訂正したい誤解。"
                         />
+                        <small>brief.md の「前提知識と想定される誤解」に入ります。</small>
                       </label>
                       <label>
                         構成メモ・台本の下書き
@@ -840,7 +740,7 @@ export default function App() {
                           }
                         />
                         <small>
-                          原文と改行を保存し、歌詞の表示・タイポグラフィ演出に使用します。
+                          原文と改行のまま plan/lyrics.txt と brief.md に保存し、歌詞の表示とタイポグラフィ演出に使います。
                         </small>
                         {lyrics.lines > 0 && (
                           <span className="lyric-stats" role="status">
@@ -873,7 +773,6 @@ export default function App() {
                         )}
                       </label>
                       <div className="asset-picker">
-                        <span className="asset-icon music">♫</span>
                         <div>
                           <strong>
                             完成音源 <em>必須</em>
@@ -881,6 +780,7 @@ export default function App() {
                           <small>MP3 / WAV / OGG / M4A / AAC</small>
                         </div>
                         <label className="file-button">
+                          <PixelIcon name="folder" />
                           音源を選ぶ
                           <input
                             type="file"
@@ -910,7 +810,7 @@ export default function App() {
                 </Section>
                 <Section index={1}>
                   <p className="section-intro">
-                    説明の根拠と、動画全体へのリクエストを。
+                    参考URLと資料は project.json の sources と brief.md に入り、制作エージェントが内容の根拠として使います。
                   </p>
                   <label>
                     参考URL
@@ -921,7 +821,7 @@ export default function App() {
                       placeholder={"https://example.com/article\n1行に1つのURL"}
                     />
                     <small>
-                      URLの内容は、ZIPを受け取ったOpusが確認します。
+                      1行に1件。内容は制作エージェントが確認します。このWebUIはURLを取得しません。
                     </small>
                   </label>
                   <div
@@ -937,12 +837,13 @@ export default function App() {
                       if (!busy) addSources(e.dataTransfer.files);
                     }}
                   >
-                    <span className="drop-icon">
-                      <Icon name="download" size={22} />
-                    </span>
-                    <strong>参考資料をここにドロップ</strong>
-                    <span>PDF、画像、テキスト、データなど</span>
+                    <strong>
+                      <PixelIcon name="sources" />
+                      参考資料をここにドロップ
+                    </strong>
+                    <span>PDF、画像、テキスト、データなど。ZIPの sources/ に入ります</span>
                     <label className="file-button">
+                      <PixelIcon name="folder" />
                       ファイルを選ぶ
                       <input
                         type="file"
@@ -978,20 +879,15 @@ export default function App() {
                       placeholder="必ず扱いたい内容、避けたい表現、語り口、参考にしたい演出など。自由に書いてください。"
                     />
                     <small>
-                      入力した指示は原文のままブリーフに保存されます。
+                      原文のまま brief.md の「動画全体への優先指示」に入ります。
                     </small>
                   </label>
                 </Section>
 
                 <Section index={2}>
                   <p className="section-intro">
-                    細部を決めすぎず、目指す雰囲気を伝えます。
+                    デザイン方向性は brief.md と project.json の direction.design に入ります。制作エージェントは制作時に方向性を3案出して選び、その前提として使います。
                   </p>
-                  <div className="direction-tags" aria-hidden="true">
-                    <span>{fullScreen ? "Full screen" : "Biim layout"}</span>
-                    <span>Motion graphics</span>
-                    <span>{isMV ? "Lyric typography" : "3D character"}</span>
-                  </div>
                   {!isMV && (
                     <label>
                       様式モード
@@ -1009,7 +905,22 @@ export default function App() {
                           </option>
                         ))}
                       </select>
-                      <small>{explainerStyles[form.styleMode].hint}</small>
+                      <ul className="style-mode-list" aria-label="様式モードの説明">
+                        {(Object.entries(explainerStyles) as [StyleMode, typeof explainerStyles.biim][]).map(([mode, style]) => (
+                          <li key={mode} className={form.styleMode === mode ? "selected" : ""}>
+                            <strong>
+                              {style.label}
+                              {form.styleMode === mode && <span className="style-mode-current">選択中</span>}
+                              {mode === "biim" && <span className="style-mode-current">既定</span>}
+                            </strong>
+                            <span>
+                              {style.hint}
+                              {portrait && mode === "mixed" ? "（縦向きでは選べません）" : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <small>選んだ様式は project.json の direction.style_mode と制作エージェントへの指示に入ります。</small>
                       {portrait && form.styleMode === "biim" && (
                         <small>縦向きではBiim枠を使えないため、Biim様式の全画面（枠なし）になります。</small>
                       )}
@@ -1055,9 +966,7 @@ export default function App() {
                   </label>
                   {!fullScreen && (
                     <small>
-                      標準Biim枠は黒系背景（#1e1e1e）＋グレーの枠線（#cccccc）。Opusが場面ごとにnote_top（右上）・note_bottom（右下）・script（読み上げと字幕）を作成します。本文・ノートはNoto
-                      Sans JP、字幕はM PLUS Rounded
-                      1c。枠・フォントは同梱します。
+                      標準Biim枠は黒系背景（#1e1e1e）とグレーの枠線（#cccccc）。制作エージェントが場面ごとに note_top（右上）・note_bottom（右下）・script（読み上げと字幕）を書きます。本文とノートは Noto Sans JP、字幕は M PLUS Rounded 1c。枠とフォントはZIPに同梱します。
                     </small>
                   )}
                   {isMV && (
@@ -1110,6 +1019,7 @@ export default function App() {
                                 setAddedCandidate(i);
                               }}
                             >
+                              <PixelIcon name="add" />
                               {addedCandidate === i
                                 ? "追記しました"
                                 : "この案を追記"}
@@ -1127,7 +1037,7 @@ export default function App() {
                           ))}
                         </ul>
                         <small>
-                          制作時もOpusが曲ごとに3案を作って選び、前作や過去事例の組み合わせをそのまま踏襲しないようにします。
+                          制作時も制作エージェントが曲ごとに3案を作って選び、前作や過去事例の組み合わせをそのまま踏襲しないようにします。
                         </small>
                       </details>
                       <label>
@@ -1171,7 +1081,7 @@ export default function App() {
                               field("design", [form.design.trim(), text].filter(Boolean).join("\n"));
                               setAdoptedExplainerCandidates((previous) => [...previous.filter((entry) => entry.text !== text), { text, mode: candidate.styleMode }]);
                               setAddedExplainerCandidate(i);
-                            }}>{addedExplainerCandidate === i ? "追記しました" : "この案を追記"}</button>
+                            }}><PixelIcon name="add" />{addedExplainerCandidate === i ? "追記しました" : "この案を追記"}</button>
                           </article>
                         ))}
                       </div>
@@ -1219,23 +1129,16 @@ export default function App() {
                       </span>
                     </label>
                   </fieldset>
-                  <div className="creative-note">
-                    <span>↗</span>
-                    <p>
-                      シーンの構成と演出はOpusに委ねます。
-                      <small>
-                        Remotion / React / SVG / Canvas /
-                        Three.jsを自由に使えるジョブです。
-                      </small>
-                    </p>
-                  </div>
+                  <p className="creative-note">
+                    場面の構成と演出は制作エージェントが決めます。ジョブの実行環境（runtime/）では Remotion・React・SVG・Canvas・Three.js を使えます。
+                  </p>
                 </Section>
 
                 {!isMV && (
                   <>
                     <Section index={3}>
                       <p className="section-intro">
-                        3Dキャラクターを、説明を支える演者に。
+                        キャラクターの設定は project.json の characters と brief.md に入り、台本の話者・字幕色・音声に使われます。
                       </p>
                       {select("characterMode", "キャラクターモード", [
                         ["solo", "1人で解説"],
@@ -1404,14 +1307,12 @@ export default function App() {
                               <small>白ふち · {profile.subtitleColor}</small>
                             </div>
                             <div className="asset-picker">
-                              <span className="asset-icon">
-                                <Icon name="box" size={24} />
-                              </span>
                               <div>
                                 <strong>{label}の3Dモデル</strong>
                                 <small>GLB形式 · 任意</small>
                               </div>
                               <label className="file-button">
+                                <PixelIcon name="folder" />
                                 モデルを選ぶ
                                 <input
                                   type="file"
@@ -1497,7 +1398,7 @@ export default function App() {
                         );
                       })}
                       <small>
-                        モデル未添付でもジョブを作成できます。必要な素材や代替案はOpusが整理します。
+                        GLBを添付しなくてもジョブを作成できます。添付したモデルは assets/character.glb（2人目は assets/character2.glb）に入ります。
                       </small>
                     </Section>
 
@@ -1510,7 +1411,7 @@ export default function App() {
                       {!isMV && (
                         <>
                           <p className="section-intro">
-                            声と、最終的な動画の仕様を設定します。
+                            音声・BGM・出力の設定は project.json に入り、ジョブ内の音声生成（npm run voice）と動画の書き出しに使われます。
                           </p>
                           {select("voiceEngine", "音声エンジン", [
                             ["aivis", "AivisSpeech — ローカル音声合成"],
@@ -1592,12 +1493,12 @@ export default function App() {
                             </small>
                           )}
                           <div className="asset-picker">
-                            <span className="asset-icon music">♫</span>
                             <div>
                               <strong>BGM</strong>
                               <small>MP3 / WAV / OGG / M4A / AAC · 任意</small>
                             </div>
                             <label className="file-button">
+                              <PixelIcon name="folder" />
                               音源を選ぶ
                               <input
                                 type="file"
@@ -1627,7 +1528,7 @@ export default function App() {
                               }
                             />
                             <span>
-                              場面に合う簡単なBGM・SEをOpusに作らせる
+                              場面に合う簡単なBGM・SEを制作エージェントに作らせる
                               <small>
                                 添付BGMを優先し、必要な効果音やループを制作します。
                               </small>
@@ -1730,15 +1631,14 @@ export default function App() {
                       onClick={() => setAdvanced(!advanced)}
                     >
                       <span>
-                        <Icon name="sliders" size={19} />
+                        <PixelIcon name="settings" />
                         <strong>演出と調査の詳細</strong>
-                        <small>ADVANCED</small>
                       </span>
-                      <span>{advanced ? "−" : "+"}</span>
+                      <span className="toggle-state">{advanced ? "閉じる" : "開く"}</span>
                     </button>
                     <div id="advanced-controls" hidden={!advanced}>
                       <p className="section-intro">
-                        演出の強さと調査方針。数値でシーンを縛らず、方向性を渡します。
+                        ここの設定は project.json の direction と research に入り、制作エージェントが演出の強さと調査の範囲を決める目安になります。場面の数や長さは指定しません。
                       </p>
                       <div className="row">
                         {select("tempo", "テンポ", [
@@ -1804,18 +1704,99 @@ export default function App() {
                   </section>
                 )}
                 <p className="editor-footnote">
-                  <Icon name="shield" size={16} />
                   入力と添付ファイルはブラウザのメモリ内で処理されます。再読み込みすると消えます。
                 </p>
               </fieldset>
+          <footer className="main-footer">
+            <span>BiimMotion</span>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setInfo(true)}
+            >
+              同梱物とデータの扱い
+            </button>
+          </footer>
+        </main>
 
-              <aside className="review-column">
-                <div className="review-sticky">
-                  <div className="preview-card">
-                    <div className="preview-heading">
-                      <span className="eyebrow">JOB OVERVIEW</span>
-                      <span className="outline-badge">LIVE</span>
+        <div className="note-column">
+          <aside className="region region-note-top" aria-label="ジョブの要点">
+            <Notch />
+            <h2 className="region-head">ジョブの要点</h2>
+            <div className="region-body">
+                    <div className="job-title">
+                      <h3>{form.title || "タイトル未入力"}</h3>
                     </div>
+                    <dl className="job-specs">
+                      <div>
+                        <dt>モード</dt>
+                        <dd>{isMV ? "MV" : "解説動画"}</dd>
+                      </div>
+                      {!isMV && (
+                        <div>
+                          <dt>様式</dt>
+                          <dd>{explainerStyles[form.styleMode].label}</dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt>尺の目安</dt>
+                        <dd>
+                          {isMV
+                            ? form.musicDurationSec
+                              ? `${form.musicDurationSec.toFixed(2)}秒（音源）`
+                              : "音源を選択"
+                            : form.durationSec
+                              ? `${form.durationSec}秒`
+                              : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>出力</dt>
+                        <dd>
+                          {portrait ? "縦9:16" : "横16:9"} · {form.width} ×{" "}
+                          {form.height} / {form.fps} fps
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>資料</dt>
+                        <dd>
+                          ファイル {sources.length}件 / URL {urlLines(form.urls).length}件
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>音声</dt>
+                        <dd>
+                          {isMV
+                            ? music?.name || "完成音源未選択"
+                            : form.voiceEngine === "aivis"
+                              ? "AivisSpeech"
+                              : "なし"}
+                        </dd>
+                      </div>
+                    </dl>
+                    <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
+                        {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
+                          <li key={label} className={done ? "done" : ""}>
+                            <span className="readiness-mark" aria-hidden="true">
+                              {done ? "✓" : ""}
+                            </span>
+                            {label}
+                            <small>{note}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    {!isMV && explainerWarnings.length > 0 && (
+                      <div className="ghost-verdict warn" role="status" aria-label="解説入力の注意">
+                        <ul>{explainerWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                        <small>準備度と注意は入力の助言です。必須入力と設定の整合性は生成時に確認します。</small>
+                      </div>
+                    )}
+            </div>
+          </aside>
+          <aside className="region region-note-bottom" aria-label="補足">
+            <Notch />
+            <h2 className="region-head">補足</h2>
+            <div className="region-body">
                     <div
                       className="preview-tabs"
                       role="tablist"
@@ -1851,38 +1832,34 @@ export default function App() {
                         <div className="layout-preview">
                           <div
                             className={`video-schematic ${fullScreen ? "full-screen" : ""} ${portrait ? "portrait" : ""} ${form.characterMode === "duo" ? "duo" : ""}`}
+                            role="img"
+                            aria-label={`画面配置の概形：${portrait ? "縦9:16" : "横16:9"}、${fullScreen ? "全画面" : "Biim枠（右上・右下ノートつき）"}、キャラ${form.characterUsage === "none" ? "なし" : form.characterMode === "duo" ? "2人" : "1人"}、字幕は下`}
                           >
                             <div className="schematic-main">
-                              <span className="scene-label">SCENE / 01</span>
-                              <strong>
-                                Ideas in
-                                <br />
-                                <i>motion.</i>
-                              </strong>
+                              <span className="schematic-title" />
+                              <span className="schematic-title short" />
                               <svg
                                 className="schematic-diagram"
                                 viewBox="0 0 240 75"
                                 aria-hidden="true"
                               >
                                 <path
+                                  className="schematic-curve"
                                   d="M20 55C60 55 50 15 95 25S160 70 215 10"
-                                  stroke="#ddeb9a"
-                                  fill="none"
-                                  strokeWidth="2"
                                 />
-                                <circle cx="95" cy="25" r="7" fill="#ddeb9a" />
-                                <circle cx="20" cy="55" r="4" fill="#9bbaa4" />
-                                <circle cx="215" cy="10" r="4" fill="#ddeb9a" />
-                                <path d="M20 70h195" stroke="#506555" />
+                                <circle cx="95" cy="25" r="7" />
+                                <circle cx="20" cy="55" r="4" />
+                                <circle cx="215" cy="10" r="4" />
+                                <path className="schematic-axis" d="M20 70h195" />
                               </svg>
                             </div>
                             {!fullScreen && (
                               <div className="schematic-notes">
-                                <span>POINT</span>
+                                <span className="schematic-note-head" />
                                 <div />
                                 <div />
                                 <div />
-                                <span>CONTEXT</span>
+                                <span className="schematic-note-head" />
                                 <div />
                                 <div />
                                 <div />
@@ -1907,25 +1884,21 @@ export default function App() {
                                     cx="22"
                                     cy="14"
                                     r="12"
-                                    fill="#ddedbb"
                                   />
                                   <path
                                     d="M3 56V42a19 19 0 0 1 38 0v14"
-                                    fill="#a5be8e"
                                   />
                                   <circle
                                     cx="18"
                                     cy="14"
                                     r="1.5"
-                                    fill="#3b5244"
                                   />
                                   <circle
                                     cx="27"
                                     cy="14"
                                     r="1.5"
-                                    fill="#3b5244"
                                   />
-                                  <path d="M18 20h9" stroke="#3b5244" />
+                                  <path d="M18 20h9" />
                                 </svg>
                               </div>
                             )}
@@ -1949,25 +1922,21 @@ export default function App() {
                                       cx="22"
                                       cy="14"
                                       r="12"
-                                      fill="#c0d6ef"
                                     />
                                     <path
                                       d="M3 56V42a19 19 0 0 1 38 0v14"
-                                      fill="#8caac9"
                                     />
                                     <circle
                                       cx="18"
                                       cy="14"
                                       r="1.5"
-                                      fill="#3b5244"
                                     />
                                     <circle
                                       cx="27"
                                       cy="14"
                                       r="1.5"
-                                      fill="#3b5244"
                                     />
-                                    <path d="M18 20h9" stroke="#3b5244" />
+                                    <path d="M18 20h9" />
                                   </svg>
                                 </div>
                               )}
@@ -1992,7 +1961,7 @@ export default function App() {
                             </div>
                           </div>
                           <p className="preview-caption">
-                            レイアウトの参考イメージ · 完成映像はOpusが制作
+                            入力に合わせた画面配置の概形です。完成映像は制作エージェントが作ります。
                           </p>
                         </div>
                       )}
@@ -2005,146 +1974,16 @@ export default function App() {
                         </pre>
                       )}
                     </div>
-                    <div className="job-title">
-                      <span>YOUR NEXT VIDEO</span>
-                      <h3>{form.title || "まだ名前のない、次の動画。"}</h3>
-                    </div>
-                    <dl className="job-specs">
-                      <div>
-                        <dt>尺の目安</dt>
-                        <dd>
-                          {isMV
-                            ? form.musicDurationSec
-                              ? `${form.musicDurationSec.toFixed(2)} sec（音源）`
-                              : "音源を選択"
-                            : form.durationSec
-                              ? `${form.durationSec} sec`
-                              : "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>出力</dt>
-                        <dd>
-                          {portrait ? "縦9:16" : "横16:9"} · {form.width} ×{" "}
-                          {form.height} / {form.fps} fps
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>資料</dt>
-                        <dd>
-                          {sources.length} files / {urlLines(form.urls).length}{" "}
-                          URLs
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>音声</dt>
-                        <dd>
-                          {isMV
-                            ? music?.name || "完成音源未選択"
-                            : form.voiceEngine === "aivis"
-                              ? "AivisSpeech"
-                              : "なし"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="export-card">
-                    <div className="export-title">
-                      <Icon name="box" size={22} />
-                      <strong>制作のバトンを渡す。</strong>
-                    </div>
-                    <p>
-                      企画・資料と、動画制作に必要な
-                      <br />
-                      ランタイムをひとつのZIPに。
-                    </p>
-                    <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
-                        {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
-                          <li key={label} className={done ? "done" : ""}>
-                            <span className="readiness-mark">
-                              {done ? <Icon name="check" size={12} /> : null}
-                            </span>
-                            {label}
-                            <small>{note}</small>
-                          </li>
-                        ))}
-                      </ul>
-                    {!isMV && explainerWarnings.length > 0 && (
-                      <div className="ghost-verdict warn" role="status" aria-label="解説入力の注意">
-                        <ul>{explainerWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
-                        <small>準備度と注意は入力の助言です。必須入力と設定の整合性は生成時に確認します。</small>
-                      </div>
-                    )}
-                    <div className="export-meta">
-                      <span className={valid ? "ready" : ""}>
-                        <span className="status-dot" />
-                        {valid
-                          ? "ジョブを書き出せます"
-                          : "企画の必須項目を入力"}
-                      </span>
-                      <small>添付 {sizeLabel(totalBytes)}</small>
-                    </div>
-                    <button
-                      type="submit"
-                      className="download-button"
-                      disabled={busy}
-                    >
-                      <Icon name="download" size={18} />
-                      {busy
-                        ? `ZIPを生成中… ${progress}%`
-                        : "Motion Job ZIPを生成"}
-                      {!busy && <span>↗</span>}
-                    </button>
-                    {busy && (
-                      <progress
-                        aria-label="ZIP生成の進行状況"
-                        max={100}
-                        value={progress}
-                      />
-                    )}
-                    {errors.length > 0 && (
-                      <div
-                        className="errors"
-                        role="alert"
-                        ref={errorRef}
-                        tabIndex={-1}
-                      >
-                        <strong>入力を確認してください</strong>
-                        <ul>
-                          {errors.map((error) => (
-                            <li key={error}>{error}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {success && (
-                      <div className="success" role="status">
-                        <Icon name="check" size={17} />
-                        <span>{success}</span>
-                      </div>
-                    )}
-                    <small className="export-note">
-                      AIの自動実行・動画のレンダリングは行いません。
-                    </small>
-                  </div>
-
                   <div className="handoff-card">
-                    <span className="eyebrow">AFTER DOWNLOAD</span>
-                    <h3>ZIPを展開して、Opusへ。</h3>
-                    <p>展開したフォルダを開き、この指示を渡すだけ。</p>
+                    <h3>制作エージェントへの指示</h3>
+                    <p>ZIPを展開したフォルダで制作エージェントを起動し、この指示を渡します。字幕帯の「指示をコピー」でクリップボードに入ります。</p>
                     <div className="prompt-box">
                       <p>{agentPrompt}</p>
-                      <button
-                        type="button"
-                        className="copy-button"
-                        onClick={copyPrompt}
-                      >
-                        <Icon name="copy" size={14} />
-                        指示をコピー
-                      </button>
                     </div>
-                    <small role="status">{copyStatus}</small>
+                    <small className="export-note">
+                      このWebUIは制作エージェントの実行も動画のレンダリングも行いません。
+                    </small>
+                  </div>
                       <details className="quality-checklist">
                         <summary>previewで確認する失敗パターン</summary>
                         <ul>
@@ -2156,13 +1995,7 @@ export default function App() {
                           指摘は「時刻・問題・期待する改善」をセットで伝えると、良い部分を壊さずに直せます。
                         </small>
                       </details>
-                    <div className="runtime-tags">
-                      <span>Remotion</span>
-                      <span>React Three Fiber</span>
-                      <span>{isMV ? "Music Video" : "Aivis"}</span>
-                    </div>
                     <div className="ghost-check-viewer">
-                      <span className="eyebrow">GHOST CHECK</span>
                       <h3>レンダーゴースト検査の結果</h3>
                       <p>
                         ローカル（runtime）で{" "}
@@ -2172,6 +2005,7 @@ export default function App() {
                         そのJSONと静止画PNGをここで開くと、結果をこの画面で確認できます（ファイルは送信されません）。
                       </p>
                       <label className="file-button">
+                        <PixelIcon name="folder" />
                         検査結果を開く
                         <input
                           type="file"
@@ -2251,25 +2085,91 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </aside>
             </div>
-          </form>
-          <footer>
-            <span>
-              BiimMaker <small>IDEAS DESERVE MOTION.</small>
-            </span>
+          </aside>
+        </div>
+
+        <div className="region subtitle-band" role="region" aria-label="書き出し">
+          <Notch />
+          <div
+            className={`band-caption ${isMV ? "plain" : "caption"}`}
+            style={
+              isMV
+                ? undefined
+                : ({
+                    "--caption-color": form.subtitleColor,
+                    "--caption-alert-color": form.secondCharacter.subtitleColor,
+                  } as CSSProperties)
+            }
+          >
+            <p className={`band-status ${valid ? "ready" : ""}`}>
+              <PixelIcon name={valid ? "validate-ok" : "warning"} />
+              <span className="band-line">
+                {valid ? "ジョブを書き出せます" : "必須項目または設定に不足があります"}
+              </span>
+              {isMV && (
+                <small>
+                  音源{" "}
+                  {form.musicDurationSec
+                    ? `${form.musicDurationSec.toFixed(2)}秒`
+                    : "未選択"}
+                </small>
+              )}
+              <small>添付 {sizeLabel(totalBytes)}</small>
+            </p>
+            {errors.length > 0 && (
+              <div
+                className="errors"
+                role="alert"
+                ref={errorRef}
+                tabIndex={-1}
+              >
+                <strong>
+                  <PixelIcon name="error" />
+                  入力を確認してください
+                </strong>
+                <ul>
+                  {errors.map((error) => (
+                    <li key={error}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {success && (
+              <div className="success" role="status">
+                <span>{success}</span>
+              </div>
+            )}
+          </div>
+          <div className="band-actions">
+            <button
+              type="submit"
+              className="download-button"
+              disabled={busy}
+            >
+              {busy
+                ? `ZIPを生成中… ${progress}%`
+                : "ジョブのZIPを生成"}
+            </button>
+            {busy && (
+              <progress
+                aria-label="ZIP生成の進行状況"
+                max={100}
+                value={progress}
+              />
+            )}
             <button
               type="button"
-              className="text-button"
-              onClick={() => setInfo(true)}
+              className="copy-button"
+              onClick={copyPrompt}
             >
-              同梱物とデータの扱い ↗
+              <PixelIcon name="agent" />
+              指示をコピー
             </button>
-          </footer>
-        </main>
-      </div>
+            <small className="copy-status" role="status">{copyStatus}</small>
+          </div>
+        </div>
+      </form>
 
       <dialog
         ref={dialogRef}
@@ -2277,24 +2177,18 @@ export default function App() {
         onClose={() => setInfo(false)}
       >
         <div className="dialog-heading">
-          <span className="eyebrow">ABOUT THE STUDIO</span>
+          <h2>BiimMotion について</h2>
           <button
-            className="icon-button"
+            className="small-button"
             type="button"
             aria-label="閉じる"
             onClick={() => setInfo(false)}
           >
-            <Icon name="close" />
+            閉じる
           </button>
         </div>
-        <h2>
-          動画制作のための、
-          <br />
-          小さな出発点。
-        </h2>
         <p>
-          BiimMakerは企画・資料・演出方針を、外部のAIエージェントへ渡すMotion
-          Job ZIPを作ります。AI API、バックエンド、アカウントは必要ありません。
+          BiimMotion は、動画の企画・資料・演出方針を、制作エージェントへ渡すジョブのZIPにまとめます。AI API、バックエンド、アカウントは必要ありません。
         </p>
         <h3>同梱するもの</h3>
         <p>

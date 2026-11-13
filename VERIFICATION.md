@@ -160,3 +160,78 @@ validate には生成 runtime 全体の TypeScript 検査が含まれる。T5b �
 
 - 実測した2配置では、規則の容量が実表示の1行文字数・行数と一致した。係数の変更は不要で、規則版は `1` のまま。
 - **未実測の配置**：Biim 枠のキャラ右（48）・2人（38）・キャラなし（54）、全画面・縦（34）。これらは T11 の通し制作で still を確認する持ち越しとする。半角文字の幅比率（0.5）と読み上げ推定（6.0文字/秒）も未実測。
+
+## 2026-11-14 第2波 UI 刷新の検証結果（T6・T7、T8b で集約）
+
+作業ID `2026-11-13-explainer-ui-harness`。WebUI をファミリーテーマ「Circuit White / Solder Mask」（Amendment 03）と4領域の骨格に刷新し、表示名を `BiimMotion`（Amendment 02）に統一した。以下は各タスクの記録（`docs/work/2026-11-13-explainer-ui-harness/tasks/T6/`・`tasks/T7/` の REPORT.md・UI-V7-CHECK.md・G3 記録）と画像を読み合わせて集約したもの。T7 の G3 記録は `review/T7-ui-full` ブランチのコミット `1fa4f8d`（`tasks/T7/G3-REVIEW.md`、Codex の交差レビュー、PASS）にある。**UI-V1〜V7 の合否は G4-β で非実装者が判定する**（計画書 §1.1、A11′）。本節は判定ではなく、判定に使う証拠の所在と記録された結果である。デザインの規則の正本は `docs/DESIGN.md`（T8b で確定）。
+
+### テスト件数とビルド
+
+| 時点 | `npm test` | `npm run build -- --base=/BiimMotionWebUI/` |
+| --- | --- | --- |
+| T6（実装者、G3 で L2 が再実行） | 72 pass / 0 fail（再実行も 72 / 0） | 成功 |
+| T7（実装者、G3 で Codex が再実行） | 72 pass / 0 fail（再実行も 72 / 0） | 成功（500kB 超のチャンクの警告のみ、従来から） |
+| T8b（`task/T8b-docs`、文書だけの変更） | 72 pass / 0 fail | 成功（同じ警告のみ） |
+
+Git Bash では MSYS のパス変換で base が書き換わるため、ビルドは `MSYS_NO_PATHCONV=1` を付けて実行した。
+
+### UI-C1〜C5（機械基準）
+
+T7 の実装者が `5f46d28` の作業ツリーで DIRECTION の検査コマンドを実行し、T7 の G3（R1）でレビュー者が同じコマンドを再実行した。両者の結果は一致した。
+
+| 基準 | 内容 | 結果 |
+| --- | --- | --- |
+| UI-C1 | `src/App.tsx`・`index.html` に英語の飾りラベル・キャッチコピー・特定モデル名が無い | grep 2本とも出力なし |
+| UI-C2 | 影・グラデーション・ぼかしが無い／角丸が `0` だけ／12px 未満の文字が無い／em・rem の文字サイズが無い／`:root` 以外に色の直値が無い | grep 4本とも出力なし。色は `awk` で `:root` とそれ以外に分けて検索し、本文側の直値は0件（一致はコメントの「White」と `white-space` だけ）。緑系の禁止は D12 由来の旧基準で、Amendment 03 により適用しない |
+| UI-C3 | Inter・Georgia が無い／外部ドメインのフォント・スタイルの参照が無い | 出力なし（字幕書体の `@font-face` は同じサイトの `job-assets/fonts/`） |
+| UI-C4 | `package.json` の依存が増えていない | `git diff 955fa5c -- package.json` が出力なし |
+| UI-C5 | `npm test` とビルドが通る | 上表のとおり |
+
+### UI-V1〜V7 の証拠（G4-β で判定）
+
+| 基準 | 証拠 | 記録された内容 |
+| --- | --- | --- |
+| UI-V1 4領域・枠線・ZIP 生成ボタン・状態の一文 | CP-A2 の S1〜S6 | S1〜S5 に4領域と字幕帯の生成ボタン・状態の一文が写る。S6 は情報ダイアログが不透明の背景の上に出る条件で、背面の4領域は写らない（T7 G3 の R4） |
+| UI-V2 解説 01 の5項目がスクロールなしで写る（UI-12） | S1、UI-V7-CHECK §3 | 1440×900 の初期表示で、制作モード・タイトル・説明目的・対象視聴者・希望尺の下端が字幕帯の上端より上 |
+| UI-V3 S1 と S3 で領域の位置と寸法が同じ（UI-14） | S1・S3、UI-V7-CHECK §3 | 解説と MV で、主領域 10,54 幅 1021／右上ノート 1041,54 389×339／右下ノート 1041,403 389×389／字幕帯 10,802 1420×88 が一致 |
+| UI-V4 字幕帯が解説は字幕様式、MV は通常書体（UI-04） | S2・S3、UI-V7-CHECK §3 | 解説は `BiimMotion Caption`（同梱の M PLUS Rounded 1c ExtraBold、`font-display: swap`）が `/BiimMotionWebUI/job-assets/fonts/…` から読まれ、`document.fonts.check` が真。MV は通常書体 |
+| UI-V5 390px で横スクロールが無く、字幕帯が下端に固定（S7・S8） | S7・S8、UI-V7-CHECK §3 | `scrollWidth` 390、字幕帯は `position: fixed` で下端 844。最下部までスクロールしても下端は同じ。幅 900 でも同様 |
+| UI-V6 機能を持たない部品が写っていない | S1〜S8 | 現在値のタグ・runtime のタグ・飾りのアイコンと英語ラベルは T7 で削除（要件書 3.1）。同じ情報はレイアウト図の `aria-label`、右上ノート、情報ダイアログの文で読める |
+| UI-V7 UI-11 の機能一覧を1項目ずつ操作した記録 | `tasks/T7/UI-V7-CHECK.md`、操作スクリプト `ui-v7-check.mjs`、生の出力 `ui-v7-result.json`（44項目） | UI-11 の20項目と AM-2 の5（様式モード選択）、UI 監査 §(2) の21項目を、Pages 用ビルドに対してヘッドレス Chrome で実際に操作して記録。UI-16 のコントラスト比の表（本文の配色はすべて 4.5:1 以上）、Tab 順（解説 71 か所・MV 36 か所、フォーカスが見えない到達先0件）、`aria-*`・`role` の数（刷新前 39／10 → T7 後 46／14）、UI-09（`transition`・`animation` なし、computed の時間 100ms 超0件）を含む |
+
+記録の限定（G4-β へ引き継ぐ）：
+
+- **N2（S3 の撮影範囲）**：S3 に写るのは方向性のたたき台3案・右上ノートの準備度（「歌詞 6行」を含む）・音源の尺までで、01 の歌詞欄の下の**詳細な歌詞統計（ブロック数・見出し・最長行の文字数など）は画角の外**である。「S3 で歌詞統計が見える」を、その欄の全統計が写った証拠と読むことはできない。統計の機能自体は UI-V7 の操作記録（`A5-lyrics`：「2行 2ブロック 見出し [Verse] [Chorus] 最長 27文字（20文字超 1行）」）で確認されており、機能の欠落ではない。G4-β で記録の十分性を判断するときは、この限定を前提にすること。T8b は画像を見て画角外であることを確かめた（撮り直しはしていない）。
+- **N1（操作スクリプトの再現性）**：`ui-v7-check.mjs` の `A1-toc`・`A1-current` は現在地の判定が確定するのを待たずに読むので、再実行で値が変わることがある。`A9-mv-direction` は先頭の軸だけを比べる。T7 の G3 は目次の6遷移・追加の操作・全候補の比較で機能を確かめた。再実行の結果を提出記録との完全一致で判定しないこと。
+- **Q-T7-2（字幕様式の文字のコントラスト）**：既定のキャラ2の字幕色（赤 `#ff0000`）と白ふちの比は 4.00:1 で 4.5:1 に届かない。字幕色は利用者のデータで、UI-04 が出力映像と同じ見え方を求めているため、T7 の G3 は「字幕のプレビューの塗りと白ふちの組に限って UI-16 の本文配色の判定から外してよい」とした（外形の白ふちと黒地は 16.67:1、同じ文は `role="alert"` の DOM テキストとして読み上げられる）。最終的な扱いは L2・G4-β の判断。
+
+### スクリーンショットの所在
+
+すべて `docs/work/2026-11-13-explainer-ui-harness/screenshots/` の下。撮影は `tools/ui-shots.mjs`（ビルドした `dist/` をローカル配信し、ヘッドレス Chrome で撮る）。オーナーの判定は待たない記録点である（Amendment 01 AM-1）。
+
+| 記録点 | フォルダ | 枚数 | 撮ったもの |
+| --- | --- | --- | --- |
+| CP-A0（刷新前） | `screenshots/before/` | 8（S1〜S8） | T0 が刷新前の UI を撮影。T6・T7 では上書きしていない |
+| CP-W1（第1波） | `screenshots/wave1/` | 8（S1〜S8） | T5-4 が撮影（前節の CP-W1 追記を参照） |
+| CP-A1（刷新第1段） | `screenshots/cp-a1/` | 2（S1・S3） | T6 が `npm run build -- --base=/BiimMotionWebUI/` の成果物を `/BiimMotionWebUI/` 配下で配信して撮影 |
+| CP-A2（刷新後） | `screenshots/after/` | 9（S1〜S8 と S1-scrolled） | T7 が撮影。S1〜S6 と S1-scrolled は 1440×900、S7・S8 は 390×844 |
+
+**CP-A2 は Pages 用ビルドに対して撮った記録である**（Amendment 03 の補足）。T7 は `5f46d28` の作業ツリーで `MSYS_NO_PATHCONV=1 npm run build -- --base=/BiimMotionWebUI/` を実行し、その `dist/` を `tools/ui-shots.mjs` が `/BiimMotionWebUI/` 配下で配信して撮った。スクリプトは `index.html` が `/BiimMotionWebUI/assets/` を読むことを確かめてから撮る。PNG 自体にはビルドの由来を示す情報が無いので、由来は撮影手順の記録（`tasks/T7/REPORT.md` §4）と T7 の G3 によるスクリプトの読解で裏付けている。
+
+CP-A2 の各枚の条件：S1 解説の初期状態、S1-scrolled S1 を最下部までスクロール（UI-13）、S2 解説のサンプル入力後の方向性のたたき台、S3 MV の入力済み、S4 必須未入力で生成したエラー表示、S5 ゴースト検査結果の読み込み、S6 情報ダイアログ、S7 390px の解説、S8 390px の MV。
+
+### MV 非退行
+
+- `git diff --exit-code 955fa5c -- tests/ghost.test.ts tests/imagegen.test.ts` は差分なし。`git diff -U0 955fa5c -- tests/job.test.ts | grep '^-[^-]'` は `-    12,` の1行だけで、これは T5b の motion-kit の数（12 → 15）の既知の変更（G4-α で許容済み）。T6・T7・T8b は `tests/` を変えていない。
+- 各時点の `npm test` で MV 5件・`tests/ghost.test.ts` 全件・`tests/imagegen.test.ts` 全件が合格した。
+- T6・T7 は `src/job.ts`・`src/mv-assist.ts`・`src/templates.ts`・`job-template/`・`src/biim-standard.json` を変えていない（C-5）。T7 の G3 は `src/App.tsx` の操作属性（イベント・`disabled`・`value` など）130件が刷新前後で完全一致することを TypeScript の構文木で確かめた。出力映像の仕様、MV の制作原則・工程・検証は変わらない。
+
+### 名称の統一（UI-10）
+
+`grep -rn "BiimMaker\|MOTION JOB STUDIO\|IDEAS DESERVE MOTION" index.html src README.md` は T8b の変更後に0件。名称文字列の所在一覧は `docs/DESIGN.md` §4.4。
+
+### 公開後確認①（第1波の公開）：未実施
+
+- 計画書 §6.3 は、公開①（第1波の main を push → PR → Pages デプロイ）の後に、公開 URL で S1・S3・S7 を撮って CP-W1 と比べた結果を本節（第2波の PR）に記録するとしている。
+- **公開①は未実施のため、公開後確認①の結果は無い。** 理由は GitHub の認証ブロッカー（オーナー側の作業待ち。`reviews/G4-alpha.md` の申し送り6）。G4-α のマージ（`5e50308`）と記録コミット（`7d5dd59`）はローカルの main にだけあり、2026-11-14 に `git ls-remote origin main` で確かめたリモートの main は `955fa5c` のままだった。
+- T8b の記録は公開①を待たない（T8b の DIRECTION の指示）。公開①が実施されたら、CI の状態と公開 URL での S1・S3・S7 の一致を、公開②の記録と同じ締めの PR か、その前の記録コミットで追記する。

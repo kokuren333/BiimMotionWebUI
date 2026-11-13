@@ -3,15 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f7f2" />
+    <meta name="theme-color" content="#EEF6F8" />
     <meta
       name="description"
-      content="動画の企画・資料・演出方針を、Opusへ渡せるMotion Job ZIPにまとめます。すべてブラウザ内で処理します。"
+      content="動画の企画・資料・演出方針を、制作エージェントへ渡すジョブのZIPにまとめます。入力と添付はブラウザ内で処理します。"
     />
-    <title>BiimMaker — Motion Job Studio</title>
+    <title>BiimMotion</title>
+    <!-- Favicon: the Biim frame (main picture, right-top and right-bottom notes,
+         two-line subtitle) drawn as a 16x16 pixel icon in the family icon palette
+         (ink, trace-soft, trace, white) -->
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5244'/%3E%3Cpath d='m12 8 12 8-12 8Z' fill='%23ddf090'/%3E%3C/svg%3E"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%230B2A3A' d='M1 1h14v1h-14zM1 2h1v1h-1zM10 2h1v1h-1zM14 2h1v1h-1zM1 3h1v1h-1zM3 3h6v1h-6zM10 3h1v1h-1zM12 3h1v1h-1zM14 3h1v1h-1zM1 4h1v1h-1zM3 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM12 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM3 5h6v1h-6zM10 5h1v1h-1zM14 5h1v1h-1zM1 6h1v1h-1zM3 6h6v1h-6zM10 6h5v1h-5zM1 7h1v1h-1zM3 7h6v1h-6zM10 7h1v1h-1zM14 7h1v1h-1zM1 8h1v1h-1zM3 8h6v1h-6zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM1 9h1v1h-1zM3 9h6v1h-6zM10 9h1v1h-1zM12 9h1v1h-1zM14 9h1v1h-1zM1 10h1v1h-1zM10 10h1v1h-1zM14 10h1v1h-1zM1 11h14v1h-14zM1 12h2v1h-2zM13 12h2v1h-2zM1 13h3v1h-3zM12 13h3v1h-3zM1 14h14v1h-14z'/%3E%3Cpath fill='%23BFEFF9' d='M2 2h8v1h-8zM11 2h3v1h-3zM2 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM13 3h1v1h-1zM2 4h1v1h-1zM9 4h1v1h-1zM11 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM9 5h1v1h-1zM11 5h3v1h-3zM2 6h1v1h-1zM9 6h1v1h-1zM2 7h1v1h-1zM9 7h1v1h-1zM11 7h3v1h-3zM2 8h1v1h-1zM9 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM9 9h1v1h-1zM11 9h1v1h-1zM13 9h1v1h-1zM2 10h8v1h-8zM11 10h3v1h-3z'/%3E%3Cpath fill='%2319C3E6' d='M3 12h10v1h-10zM4 13h8v1h-8z'/%3E%3Cpath fill='%23FFFFFF' d='M4 4h4v1h-4z'/%3E%3C/svg%3E"
     />
   </head>
   <body>
