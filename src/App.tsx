@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -127,6 +128,40 @@ function Icon({
     >
       {paths[name]}
     </svg>
+  );
+}
+
+/** Family theme notch: a 45° pixel cut on the top-left corner of a region
+ * (same shape as the CyberSprite panel notch, 10px cut with a 2px line). */
+function Notch() {
+  return (
+    <svg className="notch" width={11} height={11} aria-hidden="true">
+      <path
+        className="notch-out"
+        d="M0 0h10v1h-10zM0 1h9v1h-9zM0 2h8v1h-8zM0 3h7v1h-7zM0 4h6v1h-6zM0 5h5v1h-5zM0 6h4v1h-4zM0 7h3v1h-3zM0 8h2v1h-2zM0 9h1v1h-1z"
+      />
+      <path
+        className="notch-halo"
+        d="M10 0h1v1h-1zM9 1h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM6 4h1v1h-1zM5 5h1v1h-1zM4 6h1v1h-1zM3 7h1v1h-1zM2 8h1v1h-1zM1 9h1v1h-1zM0 10h1v1h-1z"
+      />
+      <path
+        className="notch-line"
+        d="M10 1h1v1h-1zM9 2h2v1h-2zM8 3h2v1h-2zM7 4h2v1h-2zM6 5h2v1h-2zM5 6h2v1h-2zM4 7h2v1h-2zM3 8h2v1h-2zM2 9h2v1h-2zM1 10h2v1h-2z"
+      />
+    </svg>
+  );
+}
+
+/** 16×16 pixel icon copied from the family icon set (public/icons/). */
+function PixelIcon({ name }: { name: "info" | "validate-ok" | "warning" | "error" }) {
+  return (
+    <img
+      className="ico"
+      src={`${import.meta.env.BASE_URL}icons/${name}.png`}
+      width={16}
+      height={16}
+      alt=""
+    />
   );
 }
 
@@ -577,114 +612,57 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="#concept" aria-label="BiimMaker トップ">
-          <span className="brand-symbol">
-            <Icon name="play" size={22} />
-          </span>
-          <span>
-            BiimMaker<small>MOTION JOB STUDIO</small>
-          </span>
+      <header className="app-bar">
+        <a className="brand" href="#concept" aria-label="BiimMotion トップ">
+          BiimMotion
         </a>
-        <div className="workspace-label">
-          WORKSPACE <span>01</span>
-        </div>
-        <div className="workspace-current">
-          <Icon name="layers" size={18} />
-          動画ジョブを作成
-          <span className="status-dot" />
-        </div>
-        <div className="nav-label">YOUR BRIEF</div>
-        <nav aria-label="入力セクション">
-          {(isMV ? sections.slice(0, 3) : sections).map((section, i) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className={active === section.id ? "active" : ""}
-              aria-current={active === section.id ? "location" : undefined}
-            >
-              <span className={`nav-number ${completed[i] ? "done" : ""}`}>
-                {completed[i] ? <Icon name="check" size={13} /> : `0${i + 1}`}
-              </span>
-              {section.title}
-              <span className="nav-arrow">↗</span>
-            </a>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="local-note">
-            <Icon name="shield" size={18} />
-            <span>
-              あなたのブラウザで完結<small>資料のアップロードは不要です</small>
-            </span>
-          </div>
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => setInfo(true)}
-          >
-            このスタジオについて <span>↗</span>
-          </button>
-          <small className="version">BiimMakerWebUI · v0.1</small>
-        </div>
-      </aside>
+        <h1 className="app-task">動画ジョブを作成</h1>
+        <span className="local-note">
+          ブラウザ内で完結<small>資料のアップロードは不要です</small>
+        </span>
+        <button
+          type="button"
+          className="text-button about-button"
+          onClick={() => setInfo(true)}
+        >
+          <PixelIcon name="info" />
+          このスタジオについて
+        </button>
+        <small className="version">BiimMotion · v0.1</small>
+      </header>
 
-      <div className="workspace">
-        <header className="topbar">
-          <span>
-            Workspace <span className="breadcrumb-slash">/</span>{" "}
-            <strong>New motion job</strong>
-          </span>
-          <span className="local-badge">
-            <span className="status-dot" />
-            LOCAL ONLY
-          </span>
-        </header>
-        <main>
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                <span className="tiny-square" />
-                FROM IDEA TO MOTION
-              </div>
-              <h1>
-                伝えたいことを、
-                <br />
-                <span>動きのある動画へ。</span>
-              </h1>
-              <p>
-                企画と資料をまとめて、映像制作の準備を。
-                <br />
-                構成も、演出も、実装も。あとはOpusへ。
-              </p>
-            </div>
+      <form className="studio" onSubmit={submit} noValidate>
+        <main className="region region-main">
+          <Notch />
+          <div className="toc-bar">
+            <nav className="toc" aria-label="入力セクション">
+              {(isMV ? sections.slice(0, 3) : sections).map((section, i) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className={active === section.id ? "active" : ""}
+                  aria-current={active === section.id ? "location" : undefined}
+                >
+                  <span className={`toc-number ${completed[i] ? "done" : ""}`}>
+                    0{i + 1}
+                  </span>
+                  {section.title}
+                  <span className="toc-mark" aria-hidden="true">
+                    {completed[i] ? "✓" : ""}
+                  </span>
+                  {completed[i] && <span className="sr-only">（入力済み）</span>}
+                </a>
+              ))}
+            </nav>
             <button
               type="button"
               className="sample-button"
               disabled={busy}
               onClick={sample}
             >
-              <Icon name="plus" size={16} />
               30秒のサンプルを入力
             </button>
           </div>
-          <div className="pipeline" aria-label="制作の流れ">
-            <div className="pipeline-step current">
-              <span>01</span>企画をつくる
-            </div>
-            <Icon name="arrow" size={17} />
-            <div className="pipeline-step">
-              <span>02</span>Job ZIPを書き出す
-            </div>
-            <Icon name="arrow" size={17} />
-            <div className="pipeline-step">
-              <span>03</span>Opusが動画を制作
-            </div>
-            <span className="pipeline-end">.mp4</span>
-          </div>
-
-          <form onSubmit={submit} noValidate>
-            <div className="editor-grid">
               <fieldset className="form-body" disabled={busy}>
                 <Section index={0}>
                   <label>
@@ -1808,14 +1786,91 @@ export default function App() {
                   入力と添付ファイルはブラウザのメモリ内で処理されます。再読み込みすると消えます。
                 </p>
               </fieldset>
+          <footer className="main-footer">
+            <span>BiimMotion</span>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setInfo(true)}
+            >
+              同梱物とデータの扱い
+            </button>
+          </footer>
+        </main>
 
-              <aside className="review-column">
-                <div className="review-sticky">
-                  <div className="preview-card">
-                    <div className="preview-heading">
-                      <span className="eyebrow">JOB OVERVIEW</span>
-                      <span className="outline-badge">LIVE</span>
+        <div className="note-column">
+          <aside className="region region-note-top" aria-label="ジョブの要点">
+            <Notch />
+            <h2 className="region-head">ジョブの要点</h2>
+            <div className="region-body">
+                    <div className="job-title">
+                      <h3>{form.title || "まだ名前のない、次の動画。"}</h3>
                     </div>
+                    <dl className="job-specs">
+                      <div>
+                        <dt>モード</dt>
+                        <dd>{isMV ? "MV" : "解説動画"}</dd>
+                      </div>
+                      <div>
+                        <dt>尺の目安</dt>
+                        <dd>
+                          {isMV
+                            ? form.musicDurationSec
+                              ? `${form.musicDurationSec.toFixed(2)} sec（音源）`
+                              : "音源を選択"
+                            : form.durationSec
+                              ? `${form.durationSec} sec`
+                              : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>出力</dt>
+                        <dd>
+                          {portrait ? "縦9:16" : "横16:9"} · {form.width} ×{" "}
+                          {form.height} / {form.fps} fps
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>資料</dt>
+                        <dd>
+                          {sources.length} files / {urlLines(form.urls).length}{" "}
+                          URLs
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>音声</dt>
+                        <dd>
+                          {isMV
+                            ? music?.name || "完成音源未選択"
+                            : form.voiceEngine === "aivis"
+                              ? "AivisSpeech"
+                              : "なし"}
+                        </dd>
+                      </div>
+                    </dl>
+                    <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
+                        {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
+                          <li key={label} className={done ? "done" : ""}>
+                            <span className="readiness-mark">
+                              {done ? <Icon name="check" size={12} /> : null}
+                            </span>
+                            {label}
+                            <small>{note}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    {!isMV && explainerWarnings.length > 0 && (
+                      <div className="ghost-verdict warn" role="status" aria-label="解説入力の注意">
+                        <ul>{explainerWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                        <small>準備度と注意は入力の助言です。必須入力と設定の整合性は生成時に確認します。</small>
+                      </div>
+                    )}
+            </div>
+          </aside>
+          <aside className="region region-note-bottom" aria-label="補足">
+            <Notch />
+            <h2 className="region-head">補足</h2>
+            <div className="region-body">
                     <div
                       className="preview-tabs"
                       role="tablist"
@@ -2005,146 +2060,16 @@ export default function App() {
                         </pre>
                       )}
                     </div>
-                    <div className="job-title">
-                      <span>YOUR NEXT VIDEO</span>
-                      <h3>{form.title || "まだ名前のない、次の動画。"}</h3>
-                    </div>
-                    <dl className="job-specs">
-                      <div>
-                        <dt>尺の目安</dt>
-                        <dd>
-                          {isMV
-                            ? form.musicDurationSec
-                              ? `${form.musicDurationSec.toFixed(2)} sec（音源）`
-                              : "音源を選択"
-                            : form.durationSec
-                              ? `${form.durationSec} sec`
-                              : "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>出力</dt>
-                        <dd>
-                          {portrait ? "縦9:16" : "横16:9"} · {form.width} ×{" "}
-                          {form.height} / {form.fps} fps
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>資料</dt>
-                        <dd>
-                          {sources.length} files / {urlLines(form.urls).length}{" "}
-                          URLs
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>音声</dt>
-                        <dd>
-                          {isMV
-                            ? music?.name || "完成音源未選択"
-                            : form.voiceEngine === "aivis"
-                              ? "AivisSpeech"
-                              : "なし"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="export-card">
-                    <div className="export-title">
-                      <Icon name="box" size={22} />
-                      <strong>制作のバトンを渡す。</strong>
-                    </div>
-                    <p>
-                      企画・資料と、動画制作に必要な
-                      <br />
-                      ランタイムをひとつのZIPに。
-                    </p>
-                    <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
-                        {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
-                          <li key={label} className={done ? "done" : ""}>
-                            <span className="readiness-mark">
-                              {done ? <Icon name="check" size={12} /> : null}
-                            </span>
-                            {label}
-                            <small>{note}</small>
-                          </li>
-                        ))}
-                      </ul>
-                    {!isMV && explainerWarnings.length > 0 && (
-                      <div className="ghost-verdict warn" role="status" aria-label="解説入力の注意">
-                        <ul>{explainerWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
-                        <small>準備度と注意は入力の助言です。必須入力と設定の整合性は生成時に確認します。</small>
-                      </div>
-                    )}
-                    <div className="export-meta">
-                      <span className={valid ? "ready" : ""}>
-                        <span className="status-dot" />
-                        {valid
-                          ? "ジョブを書き出せます"
-                          : "企画の必須項目を入力"}
-                      </span>
-                      <small>添付 {sizeLabel(totalBytes)}</small>
-                    </div>
-                    <button
-                      type="submit"
-                      className="download-button"
-                      disabled={busy}
-                    >
-                      <Icon name="download" size={18} />
-                      {busy
-                        ? `ZIPを生成中… ${progress}%`
-                        : "Motion Job ZIPを生成"}
-                      {!busy && <span>↗</span>}
-                    </button>
-                    {busy && (
-                      <progress
-                        aria-label="ZIP生成の進行状況"
-                        max={100}
-                        value={progress}
-                      />
-                    )}
-                    {errors.length > 0 && (
-                      <div
-                        className="errors"
-                        role="alert"
-                        ref={errorRef}
-                        tabIndex={-1}
-                      >
-                        <strong>入力を確認してください</strong>
-                        <ul>
-                          {errors.map((error) => (
-                            <li key={error}>{error}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {success && (
-                      <div className="success" role="status">
-                        <Icon name="check" size={17} />
-                        <span>{success}</span>
-                      </div>
-                    )}
-                    <small className="export-note">
-                      AIの自動実行・動画のレンダリングは行いません。
-                    </small>
-                  </div>
-
                   <div className="handoff-card">
-                    <span className="eyebrow">AFTER DOWNLOAD</span>
                     <h3>ZIPを展開して、Opusへ。</h3>
                     <p>展開したフォルダを開き、この指示を渡すだけ。</p>
                     <div className="prompt-box">
                       <p>{agentPrompt}</p>
-                      <button
-                        type="button"
-                        className="copy-button"
-                        onClick={copyPrompt}
-                      >
-                        <Icon name="copy" size={14} />
-                        指示をコピー
-                      </button>
                     </div>
-                    <small role="status">{copyStatus}</small>
+                    <small className="export-note">
+                      AIの自動実行・動画のレンダリングは行いません。
+                    </small>
+                  </div>
                       <details className="quality-checklist">
                         <summary>previewで確認する失敗パターン</summary>
                         <ul>
@@ -2251,25 +2176,90 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </aside>
             </div>
-          </form>
-          <footer>
-            <span>
-              BiimMaker <small>IDEAS DESERVE MOTION.</small>
-            </span>
+          </aside>
+        </div>
+
+        <div className="region subtitle-band" role="region" aria-label="書き出し">
+          <Notch />
+          <div
+            className={`band-caption ${isMV ? "plain" : "caption"}`}
+            style={
+              isMV
+                ? undefined
+                : ({
+                    "--caption-color": form.subtitleColor,
+                    "--caption-alert-color": form.secondCharacter.subtitleColor,
+                  } as CSSProperties)
+            }
+          >
+            <p className={`band-status ${valid ? "ready" : ""}`}>
+              <PixelIcon name={valid ? "validate-ok" : "warning"} />
+              <span className="band-line">
+                {valid ? "ジョブを書き出せます" : "企画の必須項目を入力"}
+              </span>
+              {isMV && (
+                <small>
+                  音源{" "}
+                  {form.musicDurationSec
+                    ? `${form.musicDurationSec.toFixed(2)} sec`
+                    : "未選択"}
+                </small>
+              )}
+              <small>添付 {sizeLabel(totalBytes)}</small>
+            </p>
+            {errors.length > 0 && (
+              <div
+                className="errors"
+                role="alert"
+                ref={errorRef}
+                tabIndex={-1}
+              >
+                <strong>
+                  <PixelIcon name="error" />
+                  入力を確認してください
+                </strong>
+                <ul>
+                  {errors.map((error) => (
+                    <li key={error}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {success && (
+              <div className="success" role="status">
+                <span>{success}</span>
+              </div>
+            )}
+          </div>
+          <div className="band-actions">
+            <button
+              type="submit"
+              className="download-button"
+              disabled={busy}
+            >
+              {busy
+                ? `ZIPを生成中… ${progress}%`
+                : "Motion Job ZIPを生成"}
+            </button>
+            {busy && (
+              <progress
+                aria-label="ZIP生成の進行状況"
+                max={100}
+                value={progress}
+              />
+            )}
             <button
               type="button"
-              className="text-button"
-              onClick={() => setInfo(true)}
+              className="copy-button"
+              onClick={copyPrompt}
             >
-              同梱物とデータの扱い ↗
+              指示をコピー
             </button>
-          </footer>
-        </main>
-      </div>
+            <small className="copy-status" role="status">{copyStatus}</small>
+          </div>
+        </div>
+      </form>
 
       <dialog
         ref={dialogRef}
