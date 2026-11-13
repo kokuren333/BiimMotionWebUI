@@ -2111,7 +2111,7 @@ export default function App() {
                 <small>
                   音源{" "}
                   {form.musicDurationSec
-                    ? `${form.musicDurationSec.toFixed(2)} sec`
+                    ? `${form.musicDurationSec.toFixed(2)}秒`
                     : "未選択"}
                 </small>
               )}
