@@ -118,8 +118,11 @@
 *::after {
   box-sizing: border-box;
 }
+/* A TOC jump lands the section top at 96px: below the sticky app bar and
+ * TOC (about 88px) and above the 100px top margin of the current-section
+ * observer in App.tsx, so the previous section is not marked current. */
 html {
-  scroll-padding-top: calc(var(--bar-h) + 56px);
+  scroll-padding-top: calc(var(--bar-h) + 52px);
 }
 body {
   margin: 0;
@@ -459,7 +462,6 @@ fieldset:disabled .file-button {
 .form-section {
   padding: 12px 18px 14px;
   border-bottom: 2px solid var(--ui-sep);
-  scroll-margin-top: calc(var(--bar-h) + 56px);
 }
 .section-heading {
   display: flex;
@@ -1365,18 +1367,12 @@ dialog p {
   :root {
     --band-h: 96px;
   }
-  html {
-    scroll-padding-top: 56px;
-  }
   .app-bar {
     position: static;
     flex-wrap: wrap;
     height: auto;
     min-height: var(--bar-h);
     padding: 6px var(--region-gap);
-  }
-  .form-section {
-    scroll-margin-top: 56px;
   }
   .toc-bar {
     top: 0;
@@ -1412,7 +1408,12 @@ dialog p {
   .app-task {
     display: none;
   }
+  html {
+    scroll-padding-top: 8px;
+  }
+  /* the wrapped TOC is too tall to keep on screen on phones */
   .toc-bar {
+    position: static;
     flex-wrap: wrap;
   }
   .row,
