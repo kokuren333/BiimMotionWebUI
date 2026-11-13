@@ -1,0 +1,494 @@
+{
+  "font-caption": {
+    "ok": true,
+    "detail": {
+      "fontRequests": [
+        "/BiimMotionWebUI/job-assets/fonts/MPLUSRounded1c-ExtraBold.ttf"
+      ]
+    }
+  },
+  "favicon": {
+    "ok": true,
+    "detail": null
+  },
+  "UI-12": {
+    "ok": true,
+    "detail": "制作モード・タイトル・説明目的・対象視聴者・希望尺の下端が字幕帯より上"
+  },
+  "UI-13": {
+    "ok": true,
+    "detail": "最下部までスクロールしても ZIP 生成ボタン・状態の一文・右上ノートが画面内"
+  },
+  "UI-09": {
+    "ok": true,
+    "detail": "全要素の computed transition-duration / animation-duration が 100ms 以下"
+  },
+  "A1-toc": {
+    "ok": "#concept #sources #direction #character #voice*",
+    "detail": "目次5項目"
+  },
+  "A1-current": {
+    "ok": "#direction",
+    "detail": "03 へスクロール後の現在地"
+  },
+  "A1-toc-jump": {
+    "ok": [
+      "#concept→#concept heading@110 tocBottom@96",
+      "#sources→#sources heading@109 tocBottom@88",
+      "#direction→#direction heading@110 tocBottom@88",
+      "#character→#character heading@109 tocBottom@88",
+      "#voice→#voice heading@109 tocBottom@88",
+      "#concept→#concept heading@110 tocBottom@96"
+    ],
+    "detail": "目次のリンクで各セクションへ移動したときの現在地と見出しの位置"
+  },
+  "A4-fields": {
+    "ok": [
+      "検証タイトル",
+      "解説動画 | Biim 形式 | 45秒 | 横16:9 · 1920 × 1080 / 30 fps | ファイル 0件 / URL 0件 | AivisSpeech",
+      "✓"
+    ],
+    "detail": "入力→右上ノートと目次の完了印に反映"
+  },
+  "script-stats": {
+    "ok": "42文字推定読み上げ 7.0秒（目安）見出し 2 / 2ブロック最長文 19文字字幕容量超過 0文数値・数式を含む行 0",
+    "detail": "台本統計"
+  },
+  "A2-mode": {
+    "ok": {
+      "mvState": [
+        3,
+        false,
+        false,
+        false,
+        "完成音源の曲調・感情・世界観に合ったモー",
+        true
+      ],
+      "backExp": "解説のデザイン文",
+      "backMv": "MVのデザイン文"
+    },
+    "detail": "MV で目次3・04/05/詳細なし・音源欄あり、モード別デザイン文の保持"
+  },
+  "UI-14": {
+    "ok": true,
+    "detail": {
+      "explainer": "[[\".region-main\",10,54,1021,\"h*\"],[\".region-note-top\",1041,54,389,339],[\".region-note-bottom\",1041,403,389,389],[\".subtitle-band\",10,802,1420,88]]",
+      "mv": "[[\".region-main\",10,54,1021,\"h*\"],[\".region-note-top\",1041,54,389,339],[\".region-note-bottom\",1041,403,389,389],[\".subtitle-band\",10,802,1420,88]]"
+    }
+  },
+  "A5-lyrics": {
+    "ok": "2行2ブロック見出し [Verse] [Chorus]最長 27文字（20文字超 1行）",
+    "detail": "歌詞統計（20字超の警告つき）"
+  },
+  "A6-music": {
+    "ok": [
+      "完成音源の尺: 12.00秒。この尺でMVを制作します。",
+      "ジョブを書き出せます音源 12.00秒添付 187.5 KB"
+    ],
+    "detail": "音源の尺の実測と字幕帯の表示"
+  },
+  "A9-mv-direction": {
+    "ok": {
+      "changed": "same-first-axis",
+      "appended": true,
+      "label": "追記しました",
+      "hints": 6
+    },
+    "detail": "MV たたき台：引き直し・追記・軸の説明"
+  },
+  "readiness-mv": {
+    "ok": "✓✓タイトル・表現したいこと・視聴者必須 / ✓✓完成音源12.0秒 / ・曲の雰囲気・世界観推奨 / ✓✓歌詞2行 / ✓✓デザイン方向性推奨 / ・差別化メモ任意",
+    "detail": "MV 準備度"
+  },
+  "checklist-mv": {
+    "ok": 11,
+    "detail": "MV 失敗パターン件数"
+  },
+  "band-mv-plain": {
+    "ok": "\"Segoe UI\", \"Yu Gothic UI\", Meiryo, \"Hiragino Sans\", \"Noto Sans CJK JP\", system-ui, sans-serif",
+    "detail": "MV の字幕帯は通常書体"
+  },
+  "A3-sample": {
+    "ok": [
+      "虹はどうしてできる？",
+      "30"
+    ],
+    "detail": "サンプル入力"
+  },
+  "A7-sources": {
+    "ok": {
+      "srcBefore": [
+        "paper.pdf,dropped.txt",
+        "2件の資料 · 0.0 KB / 添付は合計500MBまで",
+        true
+      ],
+      "srcAfter": [
+        "dropped.txt",
+        "1件の資料 · 0.0 KB / 添付は合計500MBまで",
+        "dropped.txtを削除",
+        "削除"
+      ],
+      "specs": "ファイル 1件 / URL 2件"
+    },
+    "detail": "選択・ドロップ（dragging 表示）・削除（文字ラベル）・件数と容量・URL 件数"
+  },
+  "A8-style-layout": {
+    "ok": {
+      "styleList": "[選択]Biim 形式選択中既定 / アニメ解説 / モーション解説 / 混在",
+      "styleMotion": [
+        "モーション解説選択中",
+        true,
+        "モーション解説",
+        true
+      ],
+      "fullOn": [
+        true,
+        "video-schematic full-screen  ",
+        "画面配置の概形：横16:9、全画面、キャラ1人、字幕は下"
+      ]
+    },
+    "detail": "様式モード4種の説明・選択・全画面切替とレイアウト図の連動"
+  },
+  "explainer-direction": {
+    "ok": {
+      "appended": true,
+      "label": "追記しました",
+      "memo": true
+    },
+    "detail": "解説たたき台：引き直し・追記・差別化メモ"
+  },
+  "A10-asset": {
+    "ok": {
+      "before": [
+        true,
+        false
+      ],
+      "after": [
+        true,
+        true
+      ],
+      "json": true
+    },
+    "detail": "素材生成2設定と JSON への反映"
+  },
+  "A11-character": {
+    "ok": {
+      "duo": [
+        2,
+        true
+      ],
+      "color": [
+        "rgb(0, 170, 0)",
+        "#00aa00",
+        "rgb(0, 170, 0)"
+      ],
+      "colorPicker": "#123456",
+      "pos": "84.375%",
+      "glb": [
+        "character.glb",
+        "character2.glb"
+      ],
+      "duoAivis": true
+    },
+    "detail": "1人／2人・字幕色（HEX／ピッカー）と字幕見本・字幕帯の即時反映・配置・GLB"
+  },
+  "A12-voice-output": {
+    "ok": {
+      "voiceNone": false,
+      "voiceAivis": [
+        true,
+        "kokuren_3rd（ノーマル）"
+      ],
+      "bgm": [
+        "song.wav"
+      ],
+      "portrait": [
+        "aivis portrait 1080x1920 30",
+        true,
+        "video-schematic full-screen portrait "
+      ],
+      "fps": "横16:9 · 1920 × 1080 / 60 fps"
+    },
+    "detail": "音声エンジン切替・Aivis・BGM・向き・解像度・fps"
+  },
+  "A13-advanced": {
+    "ok": {
+      "adv0": [
+        "false",
+        true,
+        "開く"
+      ],
+      "adv1": [
+        "true",
+        false,
+        "閉じる",
+        6,
+        2
+      ]
+    },
+    "detail": "詳細の展開（aria-expanded・hidden）と項目"
+  },
+  "A14-preview": {
+    "ok": [
+      [
+        "true",
+        "panel-files",
+        true
+      ],
+      [
+        "true",
+        "panel-json",
+        true
+      ],
+      [
+        "true",
+        "panel-layout",
+        true
+      ]
+    ],
+    "detail": "イメージ／同梱ファイル／JSON のタブ"
+  },
+  "readiness-explainer": {
+    "ok": "✓✓タイトル必須 / ✓✓説明目的必須 / ✓✓視聴者必須 / ・理解ゴール推奨 / ✓✓根拠（資料・URL・追加Web調査）推奨 / ✓✓デザイン方向性推奨 / ✓✓キャラモデル推奨 / ・構成メモ任意 / ・差別化メモ任意 / ✓✓BGM任意",
+    "detail": "解説の準備度"
+  },
+  "checklist-explainer": {
+    "ok": 23,
+    "detail": "解説の失敗パターン件数"
+  },
+  "band-caption-font": {
+    "ok": "\"BiimMotion Caption\", \"M PLUS Rounded 1c\", \"Hiragino Maru Gothic ProN\", \"Yu Gothic UI\", Meiryo, sans-serif",
+    "detail": "解説の字幕帯は字幕書体"
+  },
+  "A17-copy": {
+    "ok": [
+      "コピーしました",
+      "AGENTS.mdを読み、brief.mdとsourcesを"
+    ],
+    "detail": "指示のコピーと状態表示"
+  },
+  "A15-zip": {
+    "ok": {
+      "success": "虹はどうしてできる？-motion-job.zip を生成しました。展開したフォルダを制作エージェントに渡してください。",
+      "busySeen": [
+        true,
+        true,
+        "ZIPを生成中… 0%"
+      ]
+    },
+    "detail": "ZIP 生成・進捗・生成中の入力無効化・成功表示"
+  },
+  "A18-ghost": {
+    "ok": {
+      "error": "ghost-check のJSONとして読み取れませんでした。reports/ghost-check.md と同じフォルダのJSONを選んでください。",
+      "verdict": "要注意：孤立フラッシュ 1 件（ゴースト嫌疑）— 静止画で正解と照合してください",
+      "counts": 5,
+      "imgs": 1,
+      "missing": 1
+    },
+    "detail": "読込エラー・判定文・件数・静止画・欠けの表示"
+  },
+  "A19-dialog": {
+    "ok": {
+      "openAbout": true,
+      "closedButton": true,
+      "openFooter": [
+        true,
+        "同梱するもの/データの扱い/制作環境と参考元"
+      ],
+      "closedEsc": true
+    },
+    "detail": "情報ダイアログ（アプリバー・フッターから開く、閉じる、Esc）"
+  },
+  "A20-local": {
+    "ok": [
+      "入力と添付はブラウザ内で処理し、送信しません",
+      "入力と添付ファイルはブラウザのメモリ内で処理されます。再読み込みすると消えます。"
+    ],
+    "detail": "ローカル完結の明示"
+  },
+  "A16-errors": {
+    "ok": [
+      [
+        "動画タイトルを入力してください。",
+        "何を説明する動画かを入力してください。",
+        "対象視聴者を入力してください。"
+      ],
+      "errors",
+      "alert",
+      true
+    ],
+    "detail": "全問題の列挙・role=alert・フォーカス移動・全件が画面内"
+  },
+  "A16-clear": {
+    "ok": true,
+    "detail": "入力でエラー表示が消える"
+  },
+  "tab-order-explanation": {
+    "ok": [
+      "bar | a | BiimMotion トップ | focus:visible",
+      "bar | button[button] | BiimMotion について | focus:visible",
+      "main | a | 01動画の企画 | focus:visible",
+      "main | a | 02参考資料と指示 | focus:visible",
+      "main | a | 03デザイン方向性✓（入力済み） | focus:visible",
+      "main | a | 04キャラクター✓（入力済み） | focus:visible",
+      "main | a | 05音声と出力✓（入力済み） | focus:visible",
+      "main | button[button] | 30秒のサンプルを入力 | focus:visible",
+      "main | select[select-one] | 制作モード解説動画MV — 完成音源から制作企画・資料を基に、音声と映像を制作し | focus:visible",
+      "main | input[text] | 動画タイトル 必須 | focus:visible",
+      "main | textarea[textarea] | 何を説明する動画か 必須 | focus:visible",
+      "main | input[text] | 対象視聴者 必須 | focus:visible",
+      "main | input[number] | 希望尺（秒） | focus:visible",
+      "main | textarea[textarea] | 理解ゴールbrief.md の「理解ゴール」と project.json の d | focus:visible",
+      "main | textarea[textarea] | 前提知識と想定される誤解brief.md の「前提知識と想定される誤解」に入りま | focus:visible",
+      "main | textarea[textarea] | 構成メモ・台本の下書き0文字推定読み上げ 0.0秒（目安）見出し 0 / 0ブロ | focus:visible",
+      "main | textarea[textarea] | 参考URL1行に1件。内容は制作エージェントが確認します。このWebUIはURL | focus:visible",
+      "main | input[file] | 参考資料を選択 | focus:visible",
+      "main | textarea[textarea] | 動画全体への指示原文のまま brief.md の「動画全体への優先指示」に入りま | focus:visible",
+      "main | select[select-one] | 様式モードBiim 形式アニメ解説モーション解説混在Biim 形式選択中既定黒い | focus:visible",
+      "main | input[checkbox] | 全画面アニメーション・モーショングラフィックスオンにするとBiim枠を外し、映像 | focus:visible",
+      "main | textarea[textarea] | デザイン方向性Biim形式を軸に、タイポグラフィと図解の動きで理解を助ける。落ち | focus:visible",
+      "main | button[button] | 別の組み合わせ | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | summary | 変化の軸と考え方 | focus:visible",
+      "main | textarea[textarea] | 差別化メモ | focus:visible",
+      "main | input[checkbox] | 画像素材をCodex CLI + imagegenで生成する背景・透過素材・キャ | focus:visible",
+      "main | input[checkbox] | 動画生成AI（Seedance等）の使用を許可する既定はオフ。オンにした場合だけ | focus:visible",
+      "main | select[select-one] | キャラクターモード1人で解説2人の掛け合い | focus:visible",
+      "main | input[text] | 1人目の名前（表記） | focus:visible",
+      "main | input[text] | 1人目の読み仮名 | focus:visible",
+      "main | input[text] | 1人目の役割 | focus:visible",
+      "main | select[select-one] | 1人目の配置 | focus:visible",
+      "main | textarea[textarea] | 1人目の性格 | focus:visible",
+      "main | textarea[textarea] | 1人目の口調 | focus:visible",
+      "main | textarea[textarea] | 1人目の動きへの指示 | focus:visible",
+      "main | input[color] | 1人目の字幕色 | focus:visible",
+      "main | input[text] | 1人目の字幕色（HEX） | focus:visible",
+      "main | input[file] | 1人目の3Dモデルを選択 | focus:visible",
+      "main | select[select-one] | 音声エンジンAivisSpeech — ローカル音声合成音声合成なし | focus:visible",
+      "main | input[url] | Aivis Engine URL制作するPCで起動するエンジンのURLです。We | focus:visible",
+      "main | input[number] | Style IDkokuren_3rd（ノーマル） | focus:visible",
+      "main | input[number] | 話速 | focus:visible",
+      "main | textarea[textarea] | 声・読み方への指示自然な日本語。専門用語の読みと、図解を理解するための間を調整す | focus:visible",
+      "main | input[file] | BGMを選択 | focus:visible",
+      "main | input[checkbox] | 場面に合う簡単なBGM・SEを制作エージェントに作らせる添付BGMを優先し、必要 | focus:visible",
+      "main | textarea[textarea] | BGM・SEへの指示場面に合う簡単なBGMとSEを作成する。説明中は控えめなルー | focus:visible",
+      "main | select[select-one] | 画面の向き横16:9縦9:16（Biim枠なし） | focus:visible",
+      "main | select[select-one] | 出力解像度Full HD · 1920 × 1080HD · 1280 × 72 | focus:visible",
+      "main | select[select-one] | フレームレート24 fps25 fps30 fps60 fps | focus:visible",
+      "main | button[button] | 演出と調査の詳細閉じる | focus:visible",
+      "main | select[select-one] | テンポゆっくり、理解を優先緩急をつけるテンポよく進める | focus:visible",
+      "main | select[select-one] | 派手さ控えめ要所で強調大胆で華やか | focus:visible",
+      "main | select[select-one] | モーショングラフィックス量必要なところにバランスよく豊富に使う | focus:visible",
+      "main | select[select-one] | Biimレイアウト使用率使わない場面に応じて主なレイアウトにする | focus:visible",
+      "main | select[select-one] | 3Dキャラ登場頻度登場させないときどき登場頻繁に登場 | focus:visible",
+      "main | textarea[textarea] | 数式・図解・チャート方針数式は段階的に導入。図解は関係や因果を動きで説明。チャー | focus:visible",
+      "main | input[checkbox] | 追加のWeb調査を許可するオフでも、提供した参考URLの直接参照は許可します。 | focus:visible",
+      "main | select[select-one] | 根拠資料の扱い一次資料を優先、出典を記録提供資料の範囲で説明提供資料と追加資料を | focus:visible",
+      "main | button[button] | 同梱物とデータの扱い | focus:visible",
+      "note-top | div | タイトル未入力モード解説動画様式Biim 形式尺の目安300秒出力横16:9 · | focus:visible",
+      "note-bottom | button[button] | イメージ | focus:visible",
+      "note-bottom | button[button] | 同梱ファイル | focus:visible",
+      "note-bottom | button[button] | JSON | focus:visible",
+      "note-bottom | div | AGENTS.mdを読み、brief.mdとsourcesを基に動画を制作してく | focus:visible",
+      "note-bottom | summary | previewで確認する失敗パターン | focus:visible",
+      "note-bottom | input[file] | ghost-checkのJSONと静止画を選択 | focus:visible",
+      "band | button[submit] | ジョブのZIPを生成 | focus:visible",
+      "band | button[button] | 指示をコピー | focus:visible"
+    ],
+    "detail": "Tab で到達した順（71件）"
+  },
+  "tab-order-mv": {
+    "ok": [
+      "bar | a | BiimMotion トップ | focus:visible",
+      "bar | button[button] | BiimMotion について | focus:visible",
+      "main | a | 01動画の企画 | focus:visible",
+      "main | a | 02参考資料と指示✓（入力済み） | focus:visible",
+      "main | a | 03デザイン方向性✓（入力済み） | focus:visible",
+      "main | button[button] | 30秒のサンプルを入力 | focus:visible",
+      "main | select[select-one] | 制作モード解説動画MV — 完成音源から制作完成音源と資料を使い、曲の雰囲気に合 | focus:visible",
+      "main | input[text] | 動画タイトル 必須 | focus:visible",
+      "main | textarea[textarea] | MVで表現したいこと 必須brief.md の「表現したいこと」に入り、制作エー | focus:visible",
+      "main | input[text] | 対象視聴者 必須 | focus:visible",
+      "main | input[number] | 希望尺（秒） | focus:visible",
+      "main | textarea[textarea] | 曲の雰囲気・世界観 | focus:visible",
+      "main | textarea[textarea] | 歌詞（任意）原文と改行のまま plan/lyrics.txt と brief.m | focus:visible",
+      "main | input[file] | MVの完成音源を選択 | focus:visible",
+      "main | textarea[textarea] | 参考URL1行に1件。内容は制作エージェントが確認します。このWebUIはURL | focus:visible",
+      "main | input[file] | 参考資料を選択 | focus:visible",
+      "main | textarea[textarea] | 動画全体への指示アップロードした完成音源と参考資料を基に、曲の雰囲気に合うモーシ | focus:visible",
+      "main | textarea[textarea] | デザイン方向性完成音源の曲調・感情・世界観に合ったモーショングラフィックスのMV | focus:visible",
+      "main | button[button] | 別の組み合わせ | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | button[button] | この案を追記 | focus:visible",
+      "main | summary | 変化の軸と考え方 | focus:visible",
+      "main | textarea[textarea] | 差別化メモ（任意） | focus:visible",
+      "main | input[checkbox] | 画像素材をCodex CLI + imagegenで生成する背景・透過素材・キャ | focus:visible",
+      "main | input[checkbox] | 動画生成AI（Seedance等）の使用を許可する既定はオフ。オンにした場合だけ | focus:visible",
+      "main | button[button] | 同梱物とデータの扱い | focus:visible",
+      "note-top | div | タイトル未入力モードMV尺の目安音源を選択出力横16:9 · 1920 × 10 | focus:visible",
+      "note-bottom | button[button] | イメージ | focus:visible",
+      "note-bottom | button[button] | 同梱ファイル | focus:visible",
+      "note-bottom | button[button] | JSON | focus:visible",
+      "note-bottom | div | AGENTS.mdを読み、brief.md、曲の雰囲気、歌詞入力、完成音源とso | focus:visible",
+      "note-bottom | summary | previewで確認する失敗パターン | focus:visible",
+      "note-bottom | input[file] | ghost-checkのJSONと静止画を選択 | focus:visible",
+      "band | button[submit] | ジョブのZIPを生成 | focus:visible",
+      "band | button[button] | 指示をコピー | focus:visible"
+    ],
+    "detail": "Tab で到達した順（36件）"
+  },
+  "UI-15-900": {
+    "ok": {
+      "order": [
+        54,
+        4859,
+        5383
+      ],
+      "stacked": true,
+      "bandFixed": "fixed",
+      "bandBottom": 900,
+      "innerHeight": 900,
+      "scrollWidth": 900
+    },
+    "detail": "縦積みの順・字幕帯の固定・横スクロール"
+  },
+  "UI-15-900-end": {
+    "ok": [
+      900,
+      900,
+      900
+    ],
+    "detail": "最下部でも字幕帯は下端"
+  },
+  "UI-15-390": {
+    "ok": {
+      "order": [
+        54,
+        6583,
+        7108
+      ],
+      "stacked": true,
+      "bandFixed": "fixed",
+      "bandBottom": 844,
+      "innerHeight": 844,
+      "scrollWidth": 390
+    },
+    "detail": "縦積みの順・字幕帯の固定・横スクロール"
+  },
+  "UI-15-390-end": {
+    "ok": [
+      844,
+      844,
+      390
+    ],
+    "detail": "最下部でも字幕帯は下端"
+  },
+  "reduced-motion": {
+    "ok": "auto / 0s",
+    "detail": "prefers-reduced-motion: reduce の適用"
+  }
+}
