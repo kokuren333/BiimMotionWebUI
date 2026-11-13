@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "sources": [
+    {
+      "id": "EXAMPLE-S1",
+      "kind": "file",
+      "ref": "sources/textbook.pdf",
+      "title": "高校物理 教科書 第5章（例）",
+      "accessed": "",
+      "note": "p.112 の図5-3"
+    },
+    {
+      "id": "EXAMPLE-S2",
+      "kind": "url",
+      "ref": "https://example.com/rainbow",
+      "title": "虹のしくみ（提供URLの例）",
+      "accessed": "2026-11-14",
+      "note": ""
+    },
+    {
+      "id": "EXAMPLE-S3",
+      "kind": "common",
+      "ref": "",
+      "title": "一般知識",
+      "accessed": "",
+      "note": "数値・数式・グラフ・引用の根拠には使えない"
+    }
+  ],
+  "claims": [
+    {
+      "id": "EXAMPLE-C1",
+      "text": "虹は太陽と反対側の約42°の方向に見える",
+      "kind": "number",
+      "scene_ids": ["EXAMPLE-01"],
+      "source_ids": ["EXAMPLE-S1"],
+      "locator": "p.112 図5-3",
+      "status": "verified",
+      "check": "屈折率1.333で最小偏角を再計算し 137.5°（=180°−42.5°）を確認",
+      "note": ""
+    },
+    {
+      "id": "EXAMPLE-C2",
+      "text": "虹は雨上がりに太陽を背にすると見えやすい",
+      "kind": "fact",
+      "scene_ids": ["EXAMPLE-01"],
+      "source_ids": ["EXAMPLE-S3"],
+      "locator": "",
+      "status": "verified",
+      "check": "",
+      "note": ""
+    },
+    {
+      "id": "EXAMPLE-C3",
+      "text": "二重の虹の外側は内側より色の順が逆になる",
+      "kind": "fact",
+      "scene_ids": [],
+      "source_ids": ["EXAMPLE-S2"],
+      "locator": "第3節",
+      "status": "hedged",
+      "check": "",
+      "note": "出典の記述が簡略なため、台本では「〜とされる」と断定せずに言う"
+    }
+  ]
+}
