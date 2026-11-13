@@ -336,13 +336,16 @@ img.ico {
   background: var(--ui-ph-bg-on);
   border-color: var(--ui-ph-line-on);
 }
+/* numbers stay ink: trace-deep on white is 4.21:1, under the 4.5:1 of UI-16 */
 .toc-number {
+  padding: 0 3px;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--ui-signal);
+  color: var(--ui-text);
+  border-bottom: 2px solid var(--ui-signal);
 }
 .toc a.active .toc-number {
-  color: var(--ui-text);
+  border-bottom-color: var(--ui-text);
 }
 .toc-mark {
   display: inline-block;
