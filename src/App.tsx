@@ -45,92 +45,6 @@ import {
   scriptStats,
 } from "./explainer-assist";
 
-function Icon({
-  name,
-  size = 20,
-}: {
-  name:
-    | "play"
-    | "arrow"
-    | "download"
-    | "file"
-    | "layers"
-    | "sliders"
-    | "check"
-    | "plus"
-    | "close"
-    | "copy"
-    | "shield"
-    | "box";
-  size?: number;
-}) {
-  const paths = {
-    play: <path d="m9 5 11 7-11 7Z" />,
-    arrow: (
-      <>
-        <path d="M4 12h16M14 6l6 6-6 6" />
-      </>
-    ),
-    download: (
-      <>
-        <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
-      </>
-    ),
-    file: (
-      <>
-        <path d="M14 3H5v18h14V8Z" />
-        <path d="M14 3v5h5M8 13h8M8 17h5" />
-      </>
-    ),
-    layers: (
-      <>
-        <path d="m12 3 10 6-10 6L2 9Zm-10 11 10 6 10-6M2 18l10 6 10-6" />
-      </>
-    ),
-    sliders: (
-      <>
-        <path d="M4 6h16M4 12h16M4 18h16" />
-        <path d="M8 3v6m8 0v6m-6 0v6" />
-      </>
-    ),
-    check: <path d="m5 12 4 4L19 6" />,
-    plus: <path d="M12 5v14M5 12h14" />,
-    close: <path d="m6 6 12 12M6 18 18 6" />,
-    copy: (
-      <>
-        <rect x="8" y="8" width="12" height="13" rx="2" />
-        <path d="M15 8V3H3v13h5" />
-      </>
-    ),
-    shield: (
-      <>
-        <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" />
-        <path d="m8 12 3 3 5-6" />
-      </>
-    ),
-    box: (
-      <>
-        <path d="m12 2 9 5v10l-9 5-9-5V7Zm-9 5 9 5 9-5M12 12v10M7 4.8l9 5" />
-      </>
-    ),
-  };
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {paths[name]}
-    </svg>
-  );
-}
-
 /** Family theme notch: a 45° pixel cut on the top-left corner of a region
  * (same shape as the CyberSprite panel notch, 10px cut with a 2px line). */
 function Notch() {
@@ -153,7 +67,21 @@ function Notch() {
 }
 
 /** 16×16 pixel icon copied from the family icon set (public/icons/). */
-function PixelIcon({ name }: { name: "info" | "validate-ok" | "warning" | "error" }) {
+function PixelIcon({
+  name,
+}: {
+  name:
+    | "info"
+    | "validate-ok"
+    | "warning"
+    | "error"
+    | "folder"
+    | "sources"
+    | "add"
+    | "remove"
+    | "settings"
+    | "agent";
+}) {
   return (
     <img
       className="ico"
@@ -204,20 +132,18 @@ function AttachmentList({
     <ul className="attachments">
       {files.map((file, i) => (
         <li key={`${i}-${file.name}`}>
-          <span className="attachment-icon">
-            <Icon name="file" size={18} />
-          </span>
           <div>
             <strong title={file.name}>{file.name}</strong>
             <small>{sizeLabel(file.size)}</small>
           </div>
           <button
             type="button"
-            className="icon-button"
+            className="small-button"
             aria-label={`${file.name}を削除`}
             onClick={() => remove(i)}
           >
-            <Icon name="close" size={16} />
+            <PixelIcon name="remove" />
+            削除
           </button>
         </li>
       ))}
@@ -847,7 +773,6 @@ export default function App() {
                         )}
                       </label>
                       <div className="asset-picker">
-                        <span className="asset-icon music">♫</span>
                         <div>
                           <strong>
                             完成音源 <em>必須</em>
@@ -855,6 +780,7 @@ export default function App() {
                           <small>MP3 / WAV / OGG / M4A / AAC</small>
                         </div>
                         <label className="file-button">
+                          <PixelIcon name="folder" />
                           音源を選ぶ
                           <input
                             type="file"
@@ -911,12 +837,13 @@ export default function App() {
                       if (!busy) addSources(e.dataTransfer.files);
                     }}
                   >
-                    <span className="drop-icon">
-                      <Icon name="download" size={22} />
-                    </span>
-                    <strong>参考資料をここにドロップ</strong>
+                    <strong>
+                      <PixelIcon name="sources" />
+                      参考資料をここにドロップ
+                    </strong>
                     <span>PDF、画像、テキスト、データなど。ZIPの sources/ に入ります</span>
                     <label className="file-button">
+                      <PixelIcon name="folder" />
                       ファイルを選ぶ
                       <input
                         type="file"
@@ -978,7 +905,22 @@ export default function App() {
                           </option>
                         ))}
                       </select>
-                      <small>{explainerStyles[form.styleMode].hint}</small>
+                      <ul className="style-mode-list" aria-label="様式モードの説明">
+                        {(Object.entries(explainerStyles) as [StyleMode, typeof explainerStyles.biim][]).map(([mode, style]) => (
+                          <li key={mode} className={form.styleMode === mode ? "selected" : ""}>
+                            <strong>
+                              {style.label}
+                              {form.styleMode === mode && <span className="style-mode-current">選択中</span>}
+                              {mode === "biim" && <span className="style-mode-current">既定</span>}
+                            </strong>
+                            <span>
+                              {style.hint}
+                              {portrait && mode === "mixed" ? "（縦向きでは選べません）" : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <small>選んだ様式は project.json の direction.style_mode と制作エージェントへの指示に入ります。</small>
                       {portrait && form.styleMode === "biim" && (
                         <small>縦向きではBiim枠を使えないため、Biim様式の全画面（枠なし）になります。</small>
                       )}
@@ -1077,6 +1019,7 @@ export default function App() {
                                 setAddedCandidate(i);
                               }}
                             >
+                              <PixelIcon name="add" />
                               {addedCandidate === i
                                 ? "追記しました"
                                 : "この案を追記"}
@@ -1138,7 +1081,7 @@ export default function App() {
                               field("design", [form.design.trim(), text].filter(Boolean).join("\n"));
                               setAdoptedExplainerCandidates((previous) => [...previous.filter((entry) => entry.text !== text), { text, mode: candidate.styleMode }]);
                               setAddedExplainerCandidate(i);
-                            }}>{addedExplainerCandidate === i ? "追記しました" : "この案を追記"}</button>
+                            }}><PixelIcon name="add" />{addedExplainerCandidate === i ? "追記しました" : "この案を追記"}</button>
                           </article>
                         ))}
                       </div>
@@ -1364,14 +1307,12 @@ export default function App() {
                               <small>白ふち · {profile.subtitleColor}</small>
                             </div>
                             <div className="asset-picker">
-                              <span className="asset-icon">
-                                <Icon name="box" size={24} />
-                              </span>
                               <div>
                                 <strong>{label}の3Dモデル</strong>
                                 <small>GLB形式 · 任意</small>
                               </div>
                               <label className="file-button">
+                                <PixelIcon name="folder" />
                                 モデルを選ぶ
                                 <input
                                   type="file"
@@ -1552,12 +1493,12 @@ export default function App() {
                             </small>
                           )}
                           <div className="asset-picker">
-                            <span className="asset-icon music">♫</span>
                             <div>
                               <strong>BGM</strong>
                               <small>MP3 / WAV / OGG / M4A / AAC · 任意</small>
                             </div>
                             <label className="file-button">
+                              <PixelIcon name="folder" />
                               音源を選ぶ
                               <input
                                 type="file"
@@ -1690,10 +1631,10 @@ export default function App() {
                       onClick={() => setAdvanced(!advanced)}
                     >
                       <span>
-                        <Icon name="sliders" size={19} />
+                        <PixelIcon name="settings" />
                         <strong>演出と調査の詳細</strong>
                       </span>
-                      <span>{advanced ? "−" : "+"}</span>
+                      <span className="toggle-state">{advanced ? "閉じる" : "開く"}</span>
                     </button>
                     <div id="advanced-controls" hidden={!advanced}>
                       <p className="section-intro">
@@ -1763,7 +1704,6 @@ export default function App() {
                   </section>
                 )}
                 <p className="editor-footnote">
-                  <Icon name="shield" size={16} />
                   入力と添付ファイルはブラウザのメモリ内で処理されます。再読み込みすると消えます。
                 </p>
               </fieldset>
@@ -1792,6 +1732,12 @@ export default function App() {
                         <dt>モード</dt>
                         <dd>{isMV ? "MV" : "解説動画"}</dd>
                       </div>
+                      {!isMV && (
+                        <div>
+                          <dt>様式</dt>
+                          <dd>{explainerStyles[form.styleMode].label}</dd>
+                        </div>
+                      )}
                       <div>
                         <dt>尺の目安</dt>
                         <dd>
@@ -1831,8 +1777,8 @@ export default function App() {
                     <ul className="readiness" aria-label={isMV ? "MV入力の状況" : "解説入力の状況"}>
                         {(isMV ? mvReadiness : explainerReadiness).map(([label, done, note]) => (
                           <li key={label} className={done ? "done" : ""}>
-                            <span className="readiness-mark">
-                              {done ? <Icon name="check" size={12} /> : null}
+                            <span className="readiness-mark" aria-hidden="true">
+                              {done ? "✓" : ""}
                             </span>
                             {label}
                             <small>{note}</small>
@@ -1886,38 +1832,34 @@ export default function App() {
                         <div className="layout-preview">
                           <div
                             className={`video-schematic ${fullScreen ? "full-screen" : ""} ${portrait ? "portrait" : ""} ${form.characterMode === "duo" ? "duo" : ""}`}
+                            role="img"
+                            aria-label={`画面配置の概形：${portrait ? "縦9:16" : "横16:9"}、${fullScreen ? "全画面" : "Biim枠（右上・右下ノートつき）"}、キャラ${form.characterUsage === "none" ? "なし" : form.characterMode === "duo" ? "2人" : "1人"}、字幕は下`}
                           >
                             <div className="schematic-main">
-                              <span className="scene-label">SCENE / 01</span>
-                              <strong>
-                                Ideas in
-                                <br />
-                                <i>motion.</i>
-                              </strong>
+                              <span className="schematic-title" />
+                              <span className="schematic-title short" />
                               <svg
                                 className="schematic-diagram"
                                 viewBox="0 0 240 75"
                                 aria-hidden="true"
                               >
                                 <path
+                                  className="schematic-curve"
                                   d="M20 55C60 55 50 15 95 25S160 70 215 10"
-                                  stroke="#ddeb9a"
-                                  fill="none"
-                                  strokeWidth="2"
                                 />
-                                <circle cx="95" cy="25" r="7" fill="#ddeb9a" />
-                                <circle cx="20" cy="55" r="4" fill="#9bbaa4" />
-                                <circle cx="215" cy="10" r="4" fill="#ddeb9a" />
-                                <path d="M20 70h195" stroke="#506555" />
+                                <circle cx="95" cy="25" r="7" />
+                                <circle cx="20" cy="55" r="4" />
+                                <circle cx="215" cy="10" r="4" />
+                                <path className="schematic-axis" d="M20 70h195" />
                               </svg>
                             </div>
                             {!fullScreen && (
                               <div className="schematic-notes">
-                                <span>POINT</span>
+                                <span className="schematic-note-head" />
                                 <div />
                                 <div />
                                 <div />
-                                <span>CONTEXT</span>
+                                <span className="schematic-note-head" />
                                 <div />
                                 <div />
                                 <div />
@@ -1942,25 +1884,21 @@ export default function App() {
                                     cx="22"
                                     cy="14"
                                     r="12"
-                                    fill="#ddedbb"
                                   />
                                   <path
                                     d="M3 56V42a19 19 0 0 1 38 0v14"
-                                    fill="#a5be8e"
                                   />
                                   <circle
                                     cx="18"
                                     cy="14"
                                     r="1.5"
-                                    fill="#3b5244"
                                   />
                                   <circle
                                     cx="27"
                                     cy="14"
                                     r="1.5"
-                                    fill="#3b5244"
                                   />
-                                  <path d="M18 20h9" stroke="#3b5244" />
+                                  <path d="M18 20h9" />
                                 </svg>
                               </div>
                             )}
@@ -1984,25 +1922,21 @@ export default function App() {
                                       cx="22"
                                       cy="14"
                                       r="12"
-                                      fill="#c0d6ef"
                                     />
                                     <path
                                       d="M3 56V42a19 19 0 0 1 38 0v14"
-                                      fill="#8caac9"
                                     />
                                     <circle
                                       cx="18"
                                       cy="14"
                                       r="1.5"
-                                      fill="#3b5244"
                                     />
                                     <circle
                                       cx="27"
                                       cy="14"
                                       r="1.5"
-                                      fill="#3b5244"
                                     />
-                                    <path d="M18 20h9" stroke="#3b5244" />
+                                    <path d="M18 20h9" />
                                   </svg>
                                 </div>
                               )}
@@ -2071,6 +2005,7 @@ export default function App() {
                         そのJSONと静止画PNGをここで開くと、結果をこの画面で確認できます（ファイルは送信されません）。
                       </p>
                       <label className="file-button">
+                        <PixelIcon name="folder" />
                         検査結果を開く
                         <input
                           type="file"
@@ -2228,6 +2163,7 @@ export default function App() {
               className="copy-button"
               onClick={copyPrompt}
             >
+              <PixelIcon name="agent" />
               指示をコピー
             </button>
             <small className="copy-status" role="status">{copyStatus}</small>
@@ -2243,12 +2179,12 @@ export default function App() {
         <div className="dialog-heading">
           <h2>BiimMotion について</h2>
           <button
-            className="icon-button"
+            className="small-button"
             type="button"
             aria-label="閉じる"
             onClick={() => setInfo(false)}
           >
-            <Icon name="close" />
+            閉じる
           </button>
         </div>
         <p>
