@@ -9,6 +9,10 @@ WebUIで企画・素材・設定を入力
   → previewで確認 → build → final.mp4
 ```
 
+## エージェントで開発する場合
+
+このリポジトリ自体をエージェント（Claude Code、Codex、その他）で開発する場合は、最初にルートの[AGENTS.md](AGENTS.md)を読んでください。生成ジョブの中で動画を制作するエージェント向けの指示は[job-template/AGENTS.md](job-template/AGENTS.md)で、別物です。このREADMEのMV・解説動画の節は利用者向けの紹介であり、制作手順の正本は`job-template/AGENTS.md`です。
+
 ## ローカル起動
 
 このリポジトリの開発環境にはNode.js 22.12以上とnpmが必要です。初回は依存パッケージをインストールします。
