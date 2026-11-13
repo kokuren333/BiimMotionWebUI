@@ -17,8 +17,8 @@
 //   --chrome=PATH   Chrome / Chromium / Edge executable (or env CHROME_PATH)
 //   --only=S1,S5    capture only these shots
 //
-// Selectors target the pre-redesign DOM (CP-A0). T7 updates them for the
-// redesigned UI.
+// Selectors target the pre-redesign DOM (CP-A0 / CP-W1). S2 fills the T5
+// explainer inputs when available. T7 updates selectors for the redesigned UI.
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
@@ -441,12 +441,21 @@ const shots = [
     id: "S2",
     file: "S2-explainer-sample-direction-1440.png",
     size: [1440, 900],
-    // The explainer has no direction draft yet (requirements F8); the shot
-    // shows section 03 (デザイン方向性) after the sample input.
     async run(page) {
       await page.clickText(".sample-button", "サンプル");
       await page.waitFor("document.querySelector('form input[maxlength=\"200\"]').value.length > 0", "sample filled");
-      await page.scrollTo("#direction");
+      // T5 adds optional inputs and a direction draft below the style selector.
+      // Keep the CP-A0 fallback for builds without those fields.
+      if (await page.evaluate("Boolean(document.querySelector('[aria-label=\"構成メモの統計\"]'))")) {
+        await page.fill('#concept textarea[placeholder^="視聴後に"]', "虹ができる仕組みを、光の屈折と分散から説明できる。");
+        await page.fill('#concept textarea[placeholder^="すでに知っていること"]', "雨と光は知っている。虹が物体として空に浮かんでいるという誤解を扱う。");
+        await page.fill('#concept textarea[placeholder^="見出しや段落"]', "# 導入\n雨上がりに虹が見えるのはなぜでしょう。\n\n# 光の道筋\n雨粒に入った光は曲がり、色ごとに分かれます。\n\n# まとめ\n虹は光が分かれて見える現象です。");
+        await page.fill('#direction .direction-lab textarea', "雨粒の断面と光の道筋を対応させ、図の変化で説明する。");
+        await page.waitFor("document.querySelector('#direction .candidate-card')", "explainer candidates");
+        await page.scrollTo("#direction .direction-lab");
+      } else {
+        await page.scrollTo("#direction");
+      }
     },
   },
   {
@@ -465,7 +474,8 @@ const shots = [
     async run(page) {
       await page.click(".download-button");
       await page.waitFor("document.querySelector('.errors')", "error list");
-      await page.scrollTo(".export-card", 16);
+      // T5's longer readiness list puts errors below the card's first screen.
+      await page.reveal(".errors");
     },
   },
   {
