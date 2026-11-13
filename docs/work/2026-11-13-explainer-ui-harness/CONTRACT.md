@@ -148,8 +148,8 @@ reviewer: 台本を書いたのとは別のサブエージェント（同一モ�
 
 解析規則：
 
-- `review_mode`：正規表現 `^review_mode:[ \t]*(independent|self)[ \t]*$` に一致する最初の行。無ければ `self` として扱い、助言 `ADV-REVIEW-1` を出す。`independent` は「台本を書いたのとは別のコンテキスト（サブエージェント・別セッション・オーナー）」の意味（要件書 2.6、HN-16）。
-- `reviewer`：`^reviewer:[ \t]*(\S.*)$`。人が読むための記録で、合否に使わない。
+- `review_mode`：正規表現 `^review_mode:(?:\s*)(independent|self)\s*$` に一致する最初の行（`(?:\s*)` は `\s*` と同じ意味で、空白クラスは `\s`。コロン直後にバックスラッシュを置かない書き方にしたのは、計画書 C-6 のパス検査がこれをドライブ文字と誤検出するのを避けるためだけである。次の `reviewer` も同じ）。無ければ `self` として扱い、助言 `ADV-REVIEW-1` を出す。`independent` は「台本を書いたのとは別のコンテキスト（サブエージェント・別セッション・オーナー）」の意味（要件書 2.6、HN-16）。
+- `reviewer`：`^reviewer:(?:\s*)(\S.*)$`。人が読むための記録で、合否に使わない。
 - チェック行：`^- \[([ xX])\] ((?:PRE|POST)-[0-9]+R?)[:：]\s*(\S.*)$`。ファイル内のどこにあってもよい（節の見出しは目印で、解析に使わない）。**レビュー項目のゲートは、その ID のチェック済み行（`[x]` または `[X]`、コロンの後が空でない）が1行以上あれば合格**。無い、または未チェックなら不合格（EX-15）。
 - 免除行：見出し `## 免除（オーナー記入）` の節（次の `## ` まで）の中の `^- WAIVE ((?:PRE|POST)-[0-9]+R?)[:：]\s*(\S.*)$` だけを読む。節の外の WAIVE 行は無視する。免除された ID のゲートが不合格なら状態を `waived` にし、`waivers[]` に載せる（EX-16）。合格しているゲートへの免除行は `waivers[]` に載せない。
 - `qc.mjs` はこのファイルを**書かない**（EX-15）。書き手がオーナーかどうかは機械で判定できない。エージェントがこの節に書かない規則は T3 が AGENTS.md に書き、G3／交差レビューで確かめる。
@@ -244,7 +244,7 @@ PRE-3 の機械判定（要件書 PRE-3 を具体化）：
 1. JSON として読め、上表のキーと型がそろう。ID が一意。`EXAMPLE` で始まる ID が無い。
 2. 全 claim の `status` が `verified` か `hedged`。
 3. `verified` の claim は `source_ids` を1つ以上持ち、全 ID が `sources[]` に存在する（解決可能）。`file` の `ref` はジョブ内に実在する。
-4. `kind` が `number`・`formula`・`chart`・`quote` の `verified` claim は、`common` 以外の source を1つ以上持ち、`check` が空でない。
+4. `kind` が `number`・`formula`・`chart`・`quote` の claim は、**`status` によらず**（`verified`・`hedged` のどちらでも）、`common` 以外の source を1つ以上持ち、`check` が空でない（要件書 PRE-3 は status で条件付けていない）。規則3が `verified` の claim だけに課すのと違い、この規則は kind だけで適用する。例：`common` の source だけを参照し、`kind: "number"`・`status: "hedged"`・`check: ""` の claim は不合格。
 5. `project.research.evidence_policy` が `supplied-only` のとき、使える source は `file`（`project.sources` に載っているファイル）・`url`（`project.sources` に載っている URL）・`common` だけ（`web` は不可）。
 6. **（契約上の追加）** `project.research.allow_web_research` が `false` のとき、`web` の source があれば不合格。理由：brief が「追加Web調査: 禁止」と指示しており、`web` は定義上その指示への違反の記録だから。
 
@@ -338,14 +338,14 @@ PRE-3 の機械判定（要件書 PRE-3 を具体化）：
 | POST-3 | ナレーション同期 | machine | all | post | 音声ありの場合：script／dialogue を持つ全場面に `scene_id` の一致する発話クリップがある／場面ごとの発話実測合計 ≤ `duration_sec` + 0.1 秒／最後の発話の終了 ≤ `project.scenes[].duration_sec` の合計／発話の重なりが無い。音声なしは `not-applicable` |
 | POST-4 | 字幕の実表示（機械） | machine | all | post | `assets/audio/narration.json` の全クリップの `text` を §6.4 で検査。音声なしは `not-applicable` |
 | POST-4R | 字幕の実表示（レビュー） | review | all | post | 最も長い字幕の上位3件と、ジョブに存在する字幕領域の種類（Biim 枠／全画面）ごとに1件以上を still で確認し、はみ出し・衝突が無いことを記録 |
-| POST-5 | ゴースト走査の実施と照合（機械） | machine | all | post | `reports/ghost-check-preview.json` と `reports/ghost-check.json` が存在し `kind` が `"biim-ghost-check"`／後者のファイル更新時刻 ≥ `output/final.mp4` の更新時刻／後者の `isolated[]` の全フレームについて `reports/visual-qa.md` に `- GHOST final f<frame>: <判定>` 行がある／判定が `ゴースト` の行が残っていない |
+| POST-5 | ゴースト走査の実施と照合（機械） | machine | all | post | `reports/ghost-check-preview.json` と `reports/ghost-check.json` が存在し `kind` が `"biim-ghost-check"`／後者のファイル更新時刻 ≥ `output/final.mp4` の更新時刻／後者の `isolated[]` の全フレームについて `reports/visual-qa.md` に `- GHOST final f<frame>: <判定>` 行がある／前者の `isolated[]` の全フレームについて `reports/visual-qa.md` に `- GHOST preview f<frame>: <判定>` 行がある／判定が `ゴースト` の行が残っていない |
 | POST-5R | ゴースト走査の照合（レビュー） | review | all | post | 照合の判定を静止画（`reports/ghost-stills/`）で確認したことの記録 |
 | POST-6 | 通し視聴 | review | all | post | レビュー行に加え、`reports/visual-qa.md` に「未確認」が残っていない（残っていればレビュー行があっても不合格） |
 | POST-7 | 図と読み上げの一致 | review | all | post | §1.6 |
 | POST-8 | 納品記録 | machine | all | post | §1.8 の4見出し |
 
-- 検出件数そのものでは不合格にしない（要件書 2.6、N2）。POST-5 で不合格になるのは「走査していない」「照合を記録していない」「ゴーストと判定したものが残っている」の3つだけ。
-- POST-5 の照合行は final の走査だけに求める。preview の孤立フラッシュの照合行が無い場合は助言 `ADV-POST-4`。理由：preview は制作途中の版で、修正後の final に同じフレームが残るとは限らないため。
+- 検出件数そのものでは不合格にしない（要件書 2.6、N2）。POST-5 で不合格になるのは「走査していない」「照合を記録していない」「ゴーストと判定したものが残っている」の3つだけ。「照合を記録していない」は preview・final の両方を指す。
+- POST-5 は preview・final 両方の `isolated[]` 全件の照合行をゲートとして要求する（要件書 2.6／POST-5／EX-10 工程11）。
 
 #### 2.2.4 助言（`advisories[]`、合否に入らない）
 
@@ -361,7 +361,8 @@ PRE-3 の機械判定（要件書 PRE-3 を具体化）：
 | `ADV-POST-1` | post | ゴースト走査の件数（final と preview の孤立・連続クラスタ） |
 | `ADV-POST-2` | post | ffmpeg が使える場合、`final.mp4` の音量（`volumedetect` の平均・最大）。使えなければ「測定できず」 |
 | `ADV-POST-3` | post | チャプターの1行目が `0:00` で始まらない |
-| `ADV-POST-4` | post | preview の孤立フラッシュに照合行が無い |
+
+`ADV-POST-4` は欠番（preview の照合行は POST-5 のゲートに含めたため。ID は振り直さない）。
 
 主観的な助言（3案の差の実質、導入の強さ、山場、キャラの演技密度、fade とズームの反復、スロップ感）は `qc.mjs` では計算しない。`reports/qc-review.md` の「助言」節に任意で書く。
 
@@ -771,7 +772,7 @@ export function estimateSpeechSeconds(text: string, speed?: number): number;
 
 ## 9. 未決・確認事項（`QUESTIONS.md` への転記候補）
 
-本タスクの DIRECTION は `QUESTIONS.md` を「触らない範囲」にしているため、ここに書く。L2 が `QUESTIONS.md` に転記するかを判断する。いずれも非ブロッキングで、本書の既定で進められる。
+本タスクの DIRECTION は `QUESTIONS.md` を「触らない範囲」にしているため、ここに書く。L2 が `QUESTIONS.md` に転記するかを判断する。Q-T1-5 は L2 決定により解決済み（ブロッキング・ゲート）。Q-T1-5 を除く他の項目は非ブロッキングで、本書の既定で進められる。
 
 | ID | 宛先 | 内容 | 本書の既定 |
 | --- | --- | --- | --- |
@@ -779,4 +780,4 @@ export function estimateSpeechSeconds(text: string, speed?: number): number;
 | Q-T1-2 | L2（計画） | 計画書 §1.2 と T1 の DIRECTION は「縦では biim／mixed を選べない」としているが、既存テスト `tests/job.test.ts:603-607`（既定フォームの縦 duo ZIP の生成）と両立しない。縦で選べないのは `mixed` だけにした | §4.2 変更2 |
 | Q-T1-3 | PM | PRE-3 に「追加 Web 調査が禁止なのに `web` の source がある場合は不合格」を加えた（要件書 PRE-3 は supplied-only のときだけを書いている） | 加える（§2.1 の6） |
 | Q-T1-4 | PM | PRE-8（Biim 場面の標準、EX-07 の機械検査）を新しいゲートとして設けた。要件書 2.6 のゲート表には無い | 設ける（§5.3）。不要なら PRE-8 を外しても他の節は変わらない |
-| Q-T1-5 | PM | POST-5 の照合行を final の走査だけに求め、preview は助言にした | §2.2.3 の注記 |
+| Q-T1-5 | PM | **解決済み・ブロッキング（ゲート）**（L2 決定 `L2-Q-T1-5.md`、2026-11-13）。preview の孤立フラッシュ全件の照合記録はゲートであり、助言への格下げはしない（要件書 2.6／POST-5／EX-10 工程11）。T3・T4 をブロックする問題として解決済み | §2.2.3 POST-5（preview・final 両方の全件照合行をゲートとして要求） |
