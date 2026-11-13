@@ -160,7 +160,20 @@ OS の一時フォルダに `git worktree add --detach <一時>/base 955fa5c` �
 
 ## 4. main へのローカルマージと push 待ち
 
-（main マージの後に追記する）
+- 統合ブランチの検証記録コミット：`843ffae`（本 REPORT の §0〜§3・§5・§6 と ENVIRONMENT.md の追記）。コミット後に波ブランチ上で `npm test` 81/81、Pages 用ビルド exit 0 を再確認した。
+- マージコミット：`9d3bf2e`「Merge feat/ui-biim-frame: redesign the UI on the Biim frame and family theme」。親は `7d5dd59`（main の元の先端）と `843ffae`（波ブランチの検証記録コミット）。no-ff のマージコミット。
+- 手順の補足（G4-α と同じ事象）：`git checkout main` の時点で `tasks/G4-beta/DIRECTION.md` を Windows が削除できず（`unable to unlink … Invalid argument`。本セッションを起動した側がファイルを開いたままにしているとみられる）、`git merge --no-ff` がファイルを書き換える前に中止した（main は `7d5dd59` のまま）。残ったファイルの blob は波ブランチの blob（`55cfca1`）と同一だった。main が波ブランチの祖先なので no-ff マージの結果のツリーは波ブランチのツリーそのものであり、同じマージコミットを `git commit-tree "feat/ui-biim-frame^{tree}" -p main -p feat/ui-biim-frame` で作り、`git update-ref`（旧値 `7d5dd59` を指定）で main を進めた。作業ツリーは `git reset --mixed` → `git checkout -- .` で戻し、`git status` はクリーン、`git diff HEAD feat/ui-biim-frame` は空。結果は通常の `git merge --no-ff` と同じ（2つの親、波ブランチと同一のツリー）。
+- main 上での再検証（PowerShell）：
+  - `npm ci`：exit 0（34 packages）
+  - `npm test`：tests 81 / pass 81 / fail 0、exit 0（期待値 81/81）
+  - `npm run build -- --base=/BiimMotionWebUI/`：98 modules、exit 0。`dist/index.html` に `/BiimMotionWebUI/assets` を含む（`Select-String -Quiet`）
+  - Pages 用ビルド：`.github/workflows/pages.yml` は `npm ci` → `npm test` → `npm run build -- --base=/${{ github.event.repository.name }}/` で、リポジトリ名は `BiimMotionWebUI`（`origin` の URL）。上の3コマンドがそのまま Pages 用ビルドの再現になり、すべて exit 0
+- 本節の追記は、波ブランチを main に fast-forward してから波ブランチでコミットし、main をそのコミットへ fast-forward した（G4-α と同じ扱い）。main と `feat/ui-biim-frame` は同じコミットを指す。
+- **push はしていない。** GitHub 認証ブロッカー（Git Credential Manager の対話認証待ち）のため、`git push`・`gh pr create`・`gh pr merge` は行っていない。main はローカルで G4-α・G4-β の両マージを含み、`origin/main`（`955fa5c`）より先に進んだ状態（**main マージ済み・push 待ち**）。
+- **Pages の表示確認は G4-β の完了条件に含めない**。push 後のオーナー作業として残す：
+  - 公開①・②（push で main の Pages ワークフローが起動。第1波と第2波は同じ push で公開される見込み）：`gh run list --branch main --limit 1` → `gh run watch <run-id> --exit-status` で build・deploy の成功を確認。
+  - 公開後確認②：`node tools/ui-shots.mjs --url=https://kokuren333.github.io/BiimMotionWebUI/ --only=S1,S3,S7 --out=docs/work/2026-11-13-explainer-ui-harness/screenshots/public-<波>` で撮り、CP-A2 と領域・文言・機能が一致することを `VERIFICATION.md` に追記（計画書 §6.3、締めの PR）。公開①を別に行わない場合、CP-W1 との比較（公開後確認①）は UI 刷新後の公開になるため成り立たない。その扱いは L2 の判断。
+- `docs/work/2026-11-13-explainer-ui-harness/reviews/G4-beta.md` は L2 が書くので作っていない。
 
 ## 5. 持ち越し事項
 
@@ -179,3 +192,6 @@ OS の一時フォルダに `git worktree add --detach <一時>/base 955fa5c` �
 2. **ENVIRONMENT.md の行の順序**：既存の表に合わせ、各タスクの起動の順（T6 → T7 → T9b → T8b、REPORT の記録とコミット時刻から）に並べ、最後に本セッションを置いた。
 3. **C-5・C-6 の参考に波全体（`7d5dd59...HEAD`）も確認した**：指示の `<BASE>` は `ce6269b` だが、main へ入る差分全体を見る意味で追加した。一致は L2 の記録ファイルの誤検出だけ。
 4. **T5-review N1 を「部分対応」と記録した**：T7 の変更で理由の短い表示は出るが CONTRACT の文言どおりではないため。直していない（統合セッションの範囲外）。
+5. **main マージの方法**：ファイルのロックで `git merge` が中止したため、G4-α と同じく同じ結果になるマージコミットを plumbing で作った（§4）。L2 が通常の `git merge` を求める場合は、ロックを外したうえで `git update-ref refs/heads/main 7d5dd59` で戻してやり直せる（push 前なので影響はローカルだけ）。
+6. **記録コミットの main への取り込み**：main マージ後の §4 の追記は fast-forward で main にも入れた。main にマージ以外のコミットを足したくない場合は、L2 が push 前に main を `9d3bf2e` に戻せる。
+7. **REPORT のコミットを1度 amend した**：最初のコミットで、本 REPORT の C-6 行の文言自体が C-6 の grep（ドライブ文字のパターン）に一致したため、文言を言い換えて push 前のローカルコミットを `--amend` した（記録コミットは `843ffae`）。
