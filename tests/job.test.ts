@@ -375,7 +375,7 @@ test("ZIP includes the runtime, exact attachment bytes, Japanese brief, and audi
       (file) =>
         file.startsWith(prefix + "motion-kit/") && file.endsWith(".tsx"),
     ).length,
-    12,
+    15,
   );
 });
 
@@ -742,4 +742,95 @@ test("MV brief and AGENTS carry design-first principles, diversity steps and ass
     await zip.file(prefix + "runtime/package.json")!.async("string"),
   );
   assert.equal(runtimePackage.scripts.imagegen, "node scripts/imagegen.mjs");
+});
+
+test("non-Biim parts retain fullscreen captions, actor freedom and clear diagram space", async () => {
+  // Evaluate the shipped TSX with deterministic hook/JSX adapters. No browser
+  // or installed job dependencies are needed to inspect the rendered geometry.
+  const ts = await import("typescript");
+  type Element = { type: unknown; props: Record<string, any> };
+  const jsx = (type: unknown, props: Element["props"]): Element => ({ type, props });
+  const project = createProject({ ...form, styleMode: "motion", characterMode: "duo" }, empty);
+  const layers = { textLayerStyle: { willChange: "transform" }, stageRootStyle: { isolation: "isolate" } };
+  const dependencies: Record<string, unknown> = {
+    "react/jsx-runtime": { jsx, jsxs: jsx },
+    remotion: { AbsoluteFill: "AbsoluteFill", useVideoConfig: () => project.video },
+    "../project.json": project,
+    "../../project.json": project,
+    "./layers": layers,
+    "../../motion-kit/layers": layers,
+    "./Presentation": { biimEnabled: () => true, regionsFor: (enabled: boolean) =>
+      enabled ? project.layout.regions : project.layout.fullscreen_regions,
+      speakerFor: (id?: string) => project.characters.find((speaker) => speaker.id === id) ?? project.characters[0] },
+  };
+  const load = async (file: string) => {
+    const source = await fs.readFile("job-template/" + file, "utf8");
+    const compiled = ts.transpileModule(source, { compilerOptions: {
+      module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true, target: ts.ScriptTarget.ES2022,
+    } }).outputText;
+    const exports: Record<string, any> = {};
+    new Function("require", "exports", compiled)((id: string) => {
+      assert.ok(id in dependencies, "Unexpected dependency: " + id);
+      return dependencies[id];
+    }, exports);
+    return exports;
+  };
+  const { Captions } = await load("runtime/src/Captions.tsx");
+  dependencies["../runtime/src/Captions"] = { Captions };
+  const { StandardCaption } = await load("motion-kit/StandardCaption.tsx");
+  const { FullscreenStage } = await load("motion-kit/FullscreenStage.tsx");
+  const { DiagramStage } = await load("motion-kit/DiagramStage.tsx");
+  const rect = (style: Record<string, string>) => [
+    parseFloat(style.left) * project.layout.base_width / 100,
+    parseFloat(style.top) * project.layout.base_height / 100,
+    parseFloat(style.width) * project.layout.base_width / 100,
+    parseFloat(style.height) * project.layout.base_height / 100,
+  ];
+  const assertClear = (box: number[], obstacle: number[]) => assert.ok(
+    box[0] + box[2] <= obstacle[0] || obstacle[0] + obstacle[2] <= box[0] ||
+    box[1] + box[3] <= obstacle[1] || obstacle[1] + obstacle[3] <= box[1],
+    JSON.stringify({ box, obstacle }),
+  );
+  for (const portrait of [false, true]) {
+    Object.assign(project, createProject({ ...form, styleMode: "anime", characterMode: "duo",
+      width: portrait ? 1080 : 1920, height: portrait ? 1920 : 1080 }, empty));
+    const regions = project.layout.fullscreen_regions;
+    const props = { text: "説明の字幕\n二行目", speakerId: "character2", style: { opacity: 0.8 } };
+    const manual = StandardCaption(props);
+    assert.equal(manual.type, Captions);
+    const rendered = manual.type(manual.props);
+    assert.deepEqual(rendered, Captions({ ...props, enabled: false }));
+    assert.equal(rendered.props.style.willChange, "transform");
+    assert.equal(rendered.props.style.color, project.characters[1].subtitle_color);
+    assert.equal(rendered.props.style.fontSize, portrait ? 54 : 52);
+    assert.equal(rendered.props.style.opacity, 0.8);
+
+    const stage = FullscreenStage({ children: "diagram", character: "actor1", secondCharacter: "actor2",
+      background: "#123456", characterStyle: { transform: "translateX(100px)", zIndex: 7 } });
+    assert.equal(stage.props.style.isolation, "isolate");
+    assert.equal(stage.props.style.background, "#123456");
+    const [content, first, second] = stage.props.children;
+    assert.equal(content.props.style.willChange, "transform");
+    assert.equal(first.props.style.overflow, "visible");
+    assert.equal(first.props.style.transform, "translateX(100px)");
+    assert.equal(first.props.style.zIndex, 7);
+    assert.deepEqual(rect(second.props.style).map(Math.round), regions.character_second);
+
+    const diagram = DiagramStage({ children: "labels" });
+    const bounds = rect(diagram.props.style).map(Math.round);
+    assert.ok(bounds[2] > 0 && bounds[3] > 0);
+    for (const obstacle of [regions.subtitle, regions.character, regions.character_second])
+      assertClear(bounds, obstacle);
+    assert.equal(diagram.props.style.willChange, "transform");
+    assert.deepEqual(rect(DiagramStage({ children: null, reserveCaption: false, reserveCharacters: false }).props.style).map(Math.round),
+      [48, 48, project.layout.base_width - 96, project.layout.base_height - 96]);
+    assert.deepEqual(rect(DiagramStage({ children: null, reserveCaption: false, reserveCharacters: false, padding: 0 }).props.style).map(Math.round),
+      [0, 0, project.layout.base_width, project.layout.base_height]);
+  }
+  project.direction.character_usage = "none";
+  assert.equal(FullscreenStage({ children: null, character: "actor", secondCharacter: "actor" }).props.children[1], false);
+  const withoutActors = rect(DiagramStage({ children: null }).props.style);
+  const withActors = rect(DiagramStage({ children: null, reserveCharacters: true }).props.style);
+  assert.ok(withoutActors[2] * withoutActors[3] > withActors[2] * withActors[3]);
 });
