@@ -9,6 +9,7 @@
     "preview": "npm --workspace runtime run preview",
     "build": "npm --workspace runtime run build",
     "validate": "npm --workspace runtime run validate",
+    "qc": "npm --workspace runtime run qc --",
     "voice": "npm --workspace runtime run voice",
     "sound": "npm --workspace runtime run sound",
     "imagegen": "npm --workspace runtime run imagegen --"

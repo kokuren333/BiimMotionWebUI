@@ -17,6 +17,7 @@ import {
 } from "./lib.mjs";
 import { sceneSegments } from "./aivis.mjs";
 import { analyzeGhosts } from "./ghost-check.mjs";
+import { effectiveSceneStyle, styleErrors } from "./caption-capacity.mjs";
 
 const require = createRequire(import.meta.url);
 const errors = [];
@@ -186,6 +187,10 @@ if (process.argv.includes("--final")) {
       throw new Error(
         "Replace the starter scene and record the actual scene inventory in project.json",
       );
+    if (project.mode !== "mv") {
+      const violations = styleErrors(project);
+      if (violations.length) throw new Error(violations.join("; "));
+    }
     for (const scene of project.scenes) {
       validId(scene.id);
       if (
@@ -198,6 +203,7 @@ if (process.argv.includes("--final")) {
         throw new Error("Biim scene forbidden in fullscreen mode");
       if (
         project.mode !== "mv" &&
+        effectiveSceneStyle(project, scene) === "biim" &&
         (typeof scene.note_top !== "string" ||
           typeof scene.note_bottom !== "string")
       )
@@ -209,7 +215,7 @@ if (process.argv.includes("--final")) {
     for (const file of [
       ...(project.mode === "mv"
         ? ["plan/music-analysis.md", "plan/direction.md"]
-        : ["plan/script.md"]),
+        : ["plan/script.md", "plan/explanation-map.md", "plan/direction.md", "plan/evidence.json"]),
       "plan/storyboard.md",
       "plan/sources.md",
       "reports/visual-qa.md",
@@ -218,6 +224,11 @@ if (process.argv.includes("--final")) {
       const text = await fs.readFile(path.join(root, file), "utf8");
       if (text.trim().length < 40)
         throw new Error("Missing or empty completion record: " + file);
+      if (file === "plan/evidence.json") {
+        const evidence = JSON.parse(text);
+        if (!Array.isArray(evidence.sources) || !Array.isArray(evidence.claims))
+          throw new Error("Evidence sources / claims must be arrays");
+      }
     }
     if (
       project.voice.engine === "aivis" &&
