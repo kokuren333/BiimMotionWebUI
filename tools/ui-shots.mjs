@@ -11,14 +11,18 @@
 //   node tools/ui-shots.mjs --out=docs/work/2026-11-13-explainer-ui-harness/screenshots/before
 //
 // Options:
-//   --out=DIR       output folder (default: screenshots/before of the work id)
+//   --out=DIR       output folder (default: screenshots/before of the work id;
+//                   the redesigned UI is recorded in screenshots/after)
 //   --dist=DIR      built site (default: dist)
 //   --base=PATH     base path the build was made with (default: /BiimMotionWebUI/)
 //   --chrome=PATH   Chrome / Chromium / Edge executable (or env CHROME_PATH)
-//   --only=S1,S5    capture only these shots
+//   --only=S1,S5    capture only these shots (S1-scrolled is its own id)
 //
-// Selectors target the pre-redesign DOM (CP-A0 / CP-W1). S2 fills the T5
-// explainer inputs when available. T7 updates selectors for the redesigned UI.
+// Selectors target the redesigned four-region DOM (T7: main region, right-top
+// and right-bottom notes, fixed subtitle band). S2 fills the T5 explainer
+// inputs when available. S1-scrolled is S1 scrolled to the page end; it shows
+// that the ZIP button, the status line and the right-top note stay in view
+// (UI-13).
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
@@ -378,12 +382,18 @@ async function openPage(cdp, url, width, height) {
         window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - ${offset});
       })()`);
     },
-    // Scrolls the window until the element is fully in view. Needed for the
-    // sticky review column, whose lower part only shows near the page end.
+    // Brings the element into view. Inside a note region (which scrolls on
+    // its own) the region body is scrolled; otherwise the window is scrolled
+    // until the element is fully visible.
     async reveal(selector, margin = 16) {
       await evaluate(`(async () => {
         const el = document.querySelector(${JSON.stringify(selector)});
         if (!el) throw new Error("not found: " + ${JSON.stringify(selector)});
+        const body = el.closest(".region-body");
+        if (body && body.scrollHeight > body.clientHeight) {
+          body.scrollTop = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 8;
+          return;
+        }
         const max = document.documentElement.scrollHeight - innerHeight;
         for (let y = 0; y <= max; y += 40) {
           window.scrollTo(0, y);
@@ -438,6 +448,14 @@ const shots = [
     async run() {},
   },
   {
+    id: "S1-scrolled",
+    file: "S1-scrolled-explainer-page-end-1440.png",
+    size: [1440, 900],
+    async run(page) {
+      await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
+    },
+  },
+  {
     id: "S2",
     file: "S2-explainer-sample-direction-1440.png",
     size: [1440, 900],
@@ -474,7 +492,7 @@ const shots = [
     async run(page) {
       await page.click(".download-button");
       await page.waitFor("document.querySelector('.errors')", "error list");
-      // T5's longer readiness list puts errors below the card's first screen.
+      // The error summary lives in the fixed subtitle band; it is always in view.
       await page.reveal(".errors");
     },
   },
@@ -485,7 +503,7 @@ const shots = [
     async run(page, fixtures) {
       await page.setFiles('[aria-label="ghost-checkのJSONと静止画を選択"]', [fixtures.ghostJson, ...fixtures.stills]);
       await page.waitFor("document.querySelectorAll('.ghost-still-images img').length === 4", "ghost result with stills");
-      await page.reveal(".ghost-check-viewer");
+      await page.reveal(".ghost-check-result");
     },
   },
   {
@@ -493,7 +511,7 @@ const shots = [
     file: "S6-info-dialog-1440.png",
     size: [1440, 900],
     async run(page) {
-      await page.clickText(".sidebar-bottom button", "このスタジオについて");
+      await page.clickText(".about-button", "BiimMotion について");
       await page.waitFor("document.querySelector('dialog[open]')", "dialog open");
     },
   },
