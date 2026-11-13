@@ -53,3 +53,8 @@
 | 2026-11-14 | T8a | L3 実働 A | Claude Code／Opus 5.5／medium | 提示あり（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T8a/REPORT.md` §0 から集約 |
 | 2026-11-14 | T9a | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 未確認（不要） | 0 | G4-α で `tasks/T9a/REPORT.md` から集約 |
 | 2026-11-14 | G4-α 統合 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ping` 応答） | 実行ファイルあり（Chrome・Edge） | 0 | GPU（RTX 3080）あり。自己判定になるゲートなし（G3 は L2）。詳細は `tasks/G4-alpha/REPORT.md` |
+| 2026-11-14 | T6 | L3 実働 A | Claude Code 2.1.319／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 可（Chrome 157、撮影で確認） | 0 | G4-β で `tasks/T6/REPORT.md` §1 から集約 |
+| 2026-11-14 | T7 | L3 実働 A | Claude Code 2.1.319／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功） | 可（Chrome 157、撮影・操作で確認） | 0 | G4-β で `tasks/T7/REPORT.md` §1 から集約 |
+| 2026-11-14 | T9b | L3 実働 B | Codex／`gpt-6.1-sol`（指定値）／high | 可（未使用） | 可 | 不可 | 可（`npm ci` 成功、registry・Pages の HTTP HEAD 200） | 実行ファイルあり（headless の動作は未実証、不要） | 0 | G4-β で `tasks/T9b/REPORT.md` 冒頭から集約 |
+| 2026-11-14 | T8b | L3 実働 A | Claude Code 2.1.319／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ci`・`git ls-remote` 成功） | 実行ファイルあり（起動せず、不要） | 0 | G4-β で `tasks/T8b/REPORT.md` §1 から集約 |
+| 2026-11-14 | G4-β 統合 | L3 実働 A | Claude Code／Opus 5.5／medium | 可（未使用） | 可 | 不可 | 可（`npm ping` 応答、基準 worktree の `npm ci` 成功） | 実行ファイルあり（Chrome 157。撮り直しをしないため起動せず） | 0 | GPU（RTX 3080）あり（本タスクでは不要）。自己判定になるゲートなし（G3 は L2）。詳細は `tasks/G4-beta/REPORT.md` |
