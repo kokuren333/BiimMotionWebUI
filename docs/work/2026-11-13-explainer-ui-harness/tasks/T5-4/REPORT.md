@@ -159,3 +159,8 @@ tests/qc.test.ts:47: new blank line at EOF.
 - push・mainマージ・公開なし。他worktree、メインチェックアウトの `.agent-work/`、既存の `T5-4.done` は変更していない。承認カードは出現せず承認操作なし。サブエージェント使用なし。
 
 - コミット直前の git status --short は指定10ファイルのみ。ステージ済み差分の空白検査は出力なし、終了コード0。C-6を基準からステージ内容まで再確認し、パス・メール0件／認証情報0件。
+
+- 成果コミット確定: `5db094dafbf77440ad463bd931bf1e13eb209d4e Record wave-1 UI screenshots`。対象はPNG8枚・本REPORT・`tools/ui-shots.mjs` の10ファイル。規定の帰属行をメッセージ末尾に付けた。
+- **C-3の終了コード訂正**: 成果コミット後に `$LASTEXITCODE` を直後に取得した結果、`git diff --check 2a7d209...HEAD` の実際の終了コードは **2**。本修正節の先行記述「終了コード1」は不正確だったため、この記録で訂正する。出力は引き続き `tests/qc.test.ts:47: new blank line at EOF.` の1件のみで、既知の残件以外は増えていない。終了コード1を前提とした補助チェックが一度停止したが、ファイル変更前だった。実際の終了コード2と期待された1件の出力で再確認した。
+- 基準からの `git diff --stat` 一覧にも許可された取り込み・撮影成果以外の追加変更はない。成果コミット直後の `git status --short` は空。
+- この確定ハッシュと終了コードの追記は記録専用コミット `Record T5-4 screenshot commit reference` として保存する。テスト・ビルドの後に変えたものは本REPORTへの追記だけで、再撮影・実装変更はない。
