@@ -35,3 +35,14 @@
 ## 検証と残作業
 
 実装・検証の進行に応じて追記する。T5b 取り込み前の CP-W1 は撮影しない。push・main マージ・公開は行わない。
+
+## T5-2
+
+- T1 §3・4 に従い、解説専用フォーム項目・様式切り替え・未編集既定文の差し替え・project の解説キー・`schema_version: 0.4` を実装。MV には解説専用キーを出力しない。
+- 構成メモは非空時だけ `plan/outline.txt` に改行を含む原文で保存。brief へ理解設計・3案比較・スタイル定義・前後QCとレビュー・助言の線引き・23項目・14工程の成果物を追加。
+- anime / motion は全画面と標準字幕。createBrief と ZIP へ追記する部分、依頼文のすべてで契約 §4.6 の禁止語が出ないことを検査。mixed の場面単位の様式と `biim: false` の指示を検査。
+- `npm test`: 終了コード0、49 tests / 49 pass / 0 fail。
+- `npm run build -- --base=/BiimMotionWebUI/`: 終了コード0、94 modules transformed。500kB超チャンク警告のみ。
+- MV 非退行の追加証拠: テスト内で `git show 955fa5c:src/job.ts` 等の追跡ソースを一時ディレクトリへ読み出し実行。横・縦の2ケースでフォーム切り替え結果と project（schema_version以外）を deepEqual、依頼文・brief・ZIP内 brief と lyrics を bytes で比較。baseline worktree や既存生成物は読んでいない。
+- MV 依頼文 SHA-256（両ケースとも基準と一致）: `6a6a84c993999ef0e87502892bb8eec34f3320857eb82deddc0bfa15510c5075`。
+- MV brief SHA-256（横）: `a2ed8ea9aa26f088c2becef3541dd51f280a693ce7dc9ba3249b2732508d6c13`、（縦）: `1dd42e013bf14c36276ea3048d3cc187a1da395d107a940cd6b3825ce491bb5f`。どちらも基準とバイト一致。
