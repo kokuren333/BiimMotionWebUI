@@ -2,6 +2,8 @@
 
 企画・資料・演出方針を、ファイルの読み書きとコマンド実行ができる制作エージェント（Opus 5.5など）へ渡す**動画制作ジョブ生成WebUI**です。React / TypeScript / Viteで動く静的アプリで、ブラウザ内で制作に必要なソースコードと設定をZIPにまとめます。表示名は`BiimMotion`で、リポジトリ名・GitHub PagesのURL・ビルドのbaseパスは識別子として`BiimMotionWebUI`のままです。
 
+> **ブラウザでそのまま使える公開版**: https://kokuren333.github.io/BiimMotionWebUI/ — インストール不要です。手元で開発する場合は下の「ローカル起動」を参照してください。
+
 ```text
 WebUIで企画・素材・設定を入力
   → ジョブのZIPを生成・展開
@@ -31,6 +33,16 @@ npm run preview                                   # ビルドしたWebUIを確�
 ```
 
 WebUIにはバックエンド、アカウント、APIキーは不要です。Aivisへの接続や動画レンダリングは、生成ジョブを実行するPCで行います。
+
+### ヘッドレス生成（CLI）
+
+WebUIを開かずに、入力をJSONで渡してジョブZIPを生成することもできます。
+
+```sh
+node --experimental-strip-types tools/generate-job.ts <input.json> --out=<dir>
+```
+
+入力の既定値・検証・生成処理はWebUIと共通です（`src/job.ts`）。MCPサーバーはありません。
 
 ## 画面の構成
 
